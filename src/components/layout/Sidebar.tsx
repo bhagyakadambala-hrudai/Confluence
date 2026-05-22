@@ -5,18 +5,10 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import PageTree from "./PageTree";
 import CreateSpaceModal from "@/components/spaces/CreateSpaceModal";
-import {
-  Plus,
-  BookOpen,
-  ChevronDown,
-  ChevronRight,
-  Settings,
-  Home,
-} from "lucide-react";
+import { Plus, ChevronDown, ChevronRight, Settings, Star, Clock, Home, Building2, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Space {
@@ -40,13 +32,13 @@ export default function Sidebar({ open, user }: SidebarProps) {
   const [expandedSpaces, setExpandedSpaces] = useState<Set<string>>(new Set());
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [spacesExpanded, setSpacesExpanded] = useState(true);
 
   useEffect(() => {
     fetchSpaces();
     const channel = supabase
-      .channel("spaces-changes")
+      .channel("spaces-sidebar")
       .on("postgres_changes", { event: "*", schema: "public", table: "spaces" }, fetchSpaces)
-      .on("postgres_changes", { event: "*", schema: "public", table: "space_members" }, fetchSpaces)
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, []);
@@ -64,8 +56,7 @@ export default function Sidebar({ open, user }: SidebarProps) {
   function toggleSpace(spaceId: string) {
     setExpandedSpaces((prev) => {
       const next = new Set(prev);
-      if (next.has(spaceId)) next.delete(spaceId);
-      else next.add(spaceId);
+      if (next.has(spaceId)) next.delete(spaceId); else next.add(spaceId);
       return next;
     });
   }
@@ -76,115 +67,110 @@ export default function Sidebar({ open, user }: SidebarProps) {
 
   return (
     <>
-      <aside className="w-64 shrink-0 flex flex-col h-full bg-sidebar border-r border-sidebar-border">
-        <div className="p-4 border-b border-sidebar-border">
-          <Link href="/" className="flex items-center gap-2">
-            <BookOpen className="h-6 w-6 text-blue-400" />
-            <span className="text-lg font-bold text-sidebar-foreground">Confluence</span>
-          </Link>
-        </div>
-
+      <aside className="w-60 shrink-0 flex flex-col h-full bg-[#F4F5F7] dark:bg-[#1B2A3B] border-r border-[#DFE1E6] dark:border-slate-700">
         <ScrollArea className="flex-1 py-2">
-          <nav className="px-2 space-y-1">
-            <Link
-              href="/"
-              className={cn(
-                "flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors",
-                pathname === "/"
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-              )}
+
+          {/* Main nav */}
+          <div className="px-2 mb-1">
+            <SidebarLink href="/" icon={<Home className="h-4 w-4" />} label="Home" active={pathname === "/"} />
+            <SidebarLink href="#" icon={<Star className="h-4 w-4" />} label="Starred" active={false} />
+            <SidebarLink href="#" icon={<Clock className="h-4 w-4" />} label="Recent" active={false} />
+          </div>
+
+          <div className="h-px bg-[#DFE1E6] dark:bg-slate-700 mx-3 my-2" />
+
+          {/* Spaces section */}
+          <div className="px-2">
+            <button
+              onClick={() => setSpacesExpanded(!spacesExpanded)}
+              className="flex items-center justify-between w-full px-2 py-1.5 rounded text-xs font-semibold text-[#6B778C] dark:text-slate-400 hover:bg-[#EBECF0] dark:hover:bg-slate-700 uppercase tracking-wider transition-colors"
             >
-              <Home className="h-4 w-4" />
-              Home
-            </Link>
-          </nav>
-
-          <div className="mt-4 px-2">
-            <div className="flex items-center justify-between px-3 py-1 mb-1">
-              <span className="text-xs font-semibold text-sidebar-foreground/50 uppercase tracking-wider">
-                Spaces
-              </span>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent"
-                onClick={() => setCreateModalOpen(true)}
-              >
-                <Plus className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-
-            {loading ? (
-              <div className="space-y-1 px-3">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="h-8 rounded bg-sidebar-accent/50 animate-pulse" />
-                ))}
-              </div>
-            ) : spaces.length === 0 ? (
-              <div className="px-3 py-4 text-center">
-                <p className="text-xs text-sidebar-foreground/40">No spaces yet</p>
-                <button
-                  onClick={() => setCreateModalOpen(true)}
-                  className="text-xs text-blue-400 hover:underline mt-1"
+              <span>Spaces</span>
+              <div className="flex items-center gap-1">
+                <span
+                  onClick={(e) => { e.stopPropagation(); setCreateModalOpen(true); }}
+                  className="p-0.5 rounded hover:bg-[#DFE1E6] dark:hover:bg-slate-600"
                 >
-                  Create one
-                </button>
+                  <Plus className="h-3 w-3" />
+                </span>
+                {spacesExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
               </div>
-            ) : (
-              <div className="space-y-0.5">
-                {spaces.map((space) => (
-                  <div key={space.id}>
-                    <div
-                      className={cn(
-                        "flex items-center gap-1 px-2 py-1.5 rounded-md cursor-pointer text-sm transition-colors group",
-                        activeSpaceId === space.id
-                          ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                          : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                      )}
-                    >
-                      <button
-                        onClick={() => toggleSpace(space.id)}
-                        className="p-0.5 rounded hover:bg-sidebar-accent"
-                      >
-                        {expandedSpaces.has(space.id) ? (
-                          <ChevronDown className="h-3 w-3" />
-                        ) : (
-                          <ChevronRight className="h-3 w-3" />
-                        )}
-                      </button>
-                      <Link
-                        href={`/spaces/${space.id}`}
-                        className="flex items-center gap-2 flex-1 min-w-0"
-                      >
-                        <span className="text-base">{space.emoji || "📁"}</span>
-                        <span className="truncate text-sm">{space.name}</span>
-                      </Link>
-                      <Link
-                        href={`/spaces/${space.id}/settings`}
-                        className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-sidebar-accent"
-                      >
-                        <Settings className="h-3 w-3" />
-                      </Link>
-                    </div>
+            </button>
 
-                    {expandedSpaces.has(space.id) && (
-                      <div className="ml-4 mt-0.5">
-                        <PageTree
-                          spaceId={space.id}
-                          userId={user.id}
-                          onNavigate={(pageId) =>
-                            router.push(`/spaces/${space.id}/pages/${pageId}`)
-                          }
-                        />
-                      </div>
-                    )}
+            {spacesExpanded && (
+              <div className="mt-0.5 space-y-0.5">
+                {loading ? (
+                  <div className="space-y-1 px-2 py-1">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="h-7 rounded bg-[#EBECF0] dark:bg-slate-700 animate-pulse" />
+                    ))}
                   </div>
-                ))}
+                ) : spaces.length === 0 ? (
+                  <div className="px-3 py-3 text-center">
+                    <p className="text-xs text-[#6B778C] dark:text-slate-500">No spaces yet</p>
+                    <button onClick={() => setCreateModalOpen(true)} className="text-xs text-[#0052CC] hover:underline mt-1">
+                      Create one
+                    </button>
+                  </div>
+                ) : (
+                  spaces.map((space) => (
+                    <div key={space.id}>
+                      <div
+                        className={cn(
+                          "flex items-center gap-0.5 px-1 py-1 rounded cursor-pointer text-sm transition-colors group",
+                          activeSpaceId === space.id
+                            ? "bg-[#DEEBFF] dark:bg-blue-900/40 text-[#0052CC] dark:text-blue-300"
+                            : "text-[#172B4D] dark:text-slate-300 hover:bg-[#EBECF0] dark:hover:bg-slate-700"
+                        )}
+                      >
+                        <button onClick={() => toggleSpace(space.id)} className="p-0.5 rounded hover:bg-[#DFE1E6] dark:hover:bg-slate-600 shrink-0">
+                          {expandedSpaces.has(space.id)
+                            ? <ChevronDown className="h-3.5 w-3.5" />
+                            : <ChevronRight className="h-3.5 w-3.5" />}
+                        </button>
+                        <Link href={`/spaces/${space.id}`} className="flex items-center gap-2 flex-1 min-w-0 py-0.5">
+                          <span className="text-base leading-none">{space.emoji || "📁"}</span>
+                          <span className="truncate text-sm font-medium">{space.name}</span>
+                        </Link>
+                        <Link
+                          href={`/spaces/${space.id}/settings`}
+                          className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-[#DFE1E6] dark:hover:bg-slate-600 shrink-0 transition-opacity"
+                        >
+                          <Settings className="h-3 w-3 text-[#6B778C]" />
+                        </Link>
+                      </div>
+
+                      {expandedSpaces.has(space.id) && (
+                        <div className="ml-5 border-l border-[#DFE1E6] dark:border-slate-600 pl-1 mt-0.5">
+                          <PageTree
+                            spaceId={space.id}
+                            userId={user.id}
+                            onNavigate={(pageId) => router.push(`/spaces/${space.id}/pages/${pageId}`)}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
               </div>
             )}
           </div>
+
+          <div className="h-px bg-[#DFE1E6] dark:bg-slate-700 mx-3 my-3" />
+
+          {/* Bottom links */}
+          <div className="px-2">
+            <SidebarLink href="#" icon={<Building2 className="h-4 w-4" />} label="Company hub" active={false} external />
+            <SidebarLink href="#" icon={<Users className="h-4 w-4" />} label="Teams" active={false} external />
+          </div>
         </ScrollArea>
+
+        {/* Invite people */}
+        <div className="border-t border-[#DFE1E6] dark:border-slate-700 p-3">
+          <button className="w-full text-sm text-[#0052CC] dark:text-blue-400 hover:underline font-medium py-1">
+            Invite people
+          </button>
+        </div>
       </aside>
 
       <CreateSpaceModal
@@ -196,5 +182,25 @@ export default function Sidebar({ open, user }: SidebarProps) {
         }}
       />
     </>
+  );
+}
+
+function SidebarLink({ href, icon, label, active, external }: {
+  href: string; icon: React.ReactNode; label: string; active: boolean; external?: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      className={cn(
+        "flex items-center gap-2.5 px-2 py-1.5 rounded text-sm transition-colors",
+        active
+          ? "bg-[#DEEBFF] dark:bg-blue-900/40 text-[#0052CC] dark:text-blue-300 font-medium"
+          : "text-[#172B4D] dark:text-slate-300 hover:bg-[#EBECF0] dark:hover:bg-slate-700"
+      )}
+    >
+      <span className="text-[#6B778C] dark:text-slate-400 shrink-0">{icon}</span>
+      <span className="flex-1">{label}</span>
+      {external && <span className="text-[#6B778C] dark:text-slate-500 text-xs">↗</span>}
+    </Link>
   );
 }
