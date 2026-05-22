@@ -87,7 +87,14 @@
 /* Tiptap editor styles */
 .ProseMirror {
   outline: none;
-  min-height: 200px;
+  min-height: 300px;
+  font-size: 15px;
+  line-height: 1.7;
+  color: #172B4D;
+}
+
+.dark .ProseMirror {
+  color: #e2e8f0;
 }
 
 .ProseMirror p.is-editor-empty:first-child::before {
