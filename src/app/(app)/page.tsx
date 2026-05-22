@@ -5,11 +5,6 @@ export default async function HomePage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  const { data: spaces } = await supabase
-    .from("spaces")
-    .select("id, name, emoji, description, created_at, owner_id")
-    .order("created_at", { ascending: false });
-
   const { data: recentPages } = await supabase
     .from("pages")
     .select("id, title, emoji, space_id, updated_at, spaces(name, emoji)")
@@ -23,12 +18,5 @@ export default async function HomePage() {
     spaces: (p.spaces as unknown) as { name: string; emoji: string } | null,
   }));
 
-  return (
-    <HomeContent
-      recentPages={pages}
-      spaces={spaces || []}
-      currentUserId={user!.id}
-      firstName={firstName}
-    />
-  );
+  return <HomeContent recentPages={pages} firstName={firstName} />;
 }
