@@ -23,9 +23,10 @@ interface EditorProps {
   content: string;
   onChange: (content: string) => void;
   editable?: boolean;
+  placeholder?: string;
 }
 
-export default function Editor({ content, onChange, editable = true }: EditorProps) {
+export default function Editor({ content, onChange, editable = true, placeholder = "Start writing… (type / for commands)" }: EditorProps) {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -41,9 +42,7 @@ export default function Editor({ content, onChange, editable = true }: EditorPro
       TableRow,
       TableCell,
       TableHeader,
-      Placeholder.configure({
-        placeholder: "Start writing… (type / for commands)",
-      }),
+      Placeholder.configure({ placeholder }),
     ],
     content,
     editable,
