@@ -17,34 +17,29 @@ export default async function PageViewRoute({
 
   const { data: page } = await admin
     .from("pages")
-    .select("*, profiles(id, full_name, avatar_url)")
+    .select("*")
     .eq("id", pageId)
     .single();
 
   if (!page) notFound();
 
-  const { data: space } = await admin
-    .from("spaces")
-    .select("id, name, emoji")
-    .eq("id", spaceId)
-    .single();
+  const [
+    { data: space },
+    { data: profile },
+    { data: labels },
+  ] = await Promise.all([
+    admin.from("spaces").select("id, name, emoji").eq("id", spaceId).single(),
+    admin.from("profiles").select("id, full_name, avatar_url").eq("id", page.author_id).single(),
+    admin.from("labels").select("*").eq("space_id", spaceId),
+  ]);
 
   const parentPageResult = page.parent_id
-    ? await admin
-        .from("pages")
-        .select("id, title, emoji")
-        .eq("id", page.parent_id)
-        .single()
+    ? await admin.from("pages").select("id, title, emoji").eq("id", page.parent_id).single()
     : { data: null };
-
-  const { data: labels } = await admin
-    .from("labels")
-    .select("*")
-    .eq("space_id", spaceId);
 
   return (
     <PageView
-      page={page}
+      page={{ ...page, profiles: profile }}
       space={space}
       parentPage={parentPageResult.data}
       labels={labels || []}
