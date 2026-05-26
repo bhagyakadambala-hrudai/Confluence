@@ -14,7 +14,8 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import SearchModal from "@/components/search/SearchModal";
 import CreateSpaceModal from "@/components/spaces/CreateSpaceModal";
-import { Moon, Sun, Search, LogOut, Settings, User as UserIcon, Plus, HelpCircle, Bell, FileText, LayoutTemplate, Globe, PenLine, Database, Link2, ChevronRight, ChevronDown } from "lucide-react";
+import { Moon, Sun, Search, LogOut, Settings, User as UserIcon, Plus, HelpCircle, FileText, LayoutTemplate, Globe, PenLine, Database, Link2, ChevronRight, ChevronDown } from "lucide-react";
+import NotificationDropdown from "@/components/layout/NotificationDropdown";
 import { useTheme } from "next-themes";
 import { getInitials } from "@/lib/utils";
 import { toast } from "sonner";
@@ -202,9 +203,7 @@ export default function Navbar({ user, onToggleSidebar }: NavbarProps) {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <button className="h-8 w-8 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 rounded transition-colors">
-            <Bell className="h-4 w-4" />
-          </button>
+          <NotificationDropdown />
           <button className="h-8 w-8 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 rounded transition-colors">
             <HelpCircle className="h-4 w-4" />
           </button>
@@ -234,10 +233,10 @@ export default function Navbar({ user, onToggleSidebar }: NavbarProps) {
                 <p className="text-sm font-semibold truncate">{fullName}</p>
                 <p className="text-xs text-muted-foreground truncate">{user.email}</p>
               </div>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push("/profile")}>
                 <UserIcon className="h-4 w-4 mr-2" /> Profile
               </DropdownMenuItem>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push("/settings")}>
                 <Settings className="h-4 w-4 mr-2" /> Settings
               </DropdownMenuItem>
               <DropdownMenuSeparator />

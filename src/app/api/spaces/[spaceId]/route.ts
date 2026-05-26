@@ -27,14 +27,17 @@ export async function PATCH(
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
-  const { name, description, emoji } = body;
+  const updateData: Record<string, unknown> = {};
+  if (body.name !== undefined) updateData.name = body.name;
+  if (body.description !== undefined) updateData.description = body.description;
+  if (body.emoji !== undefined) updateData.emoji = body.emoji;
+  if (body.overview_content !== undefined) updateData.overview_content = body.overview_content;
 
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("spaces")
-    .update({ name, description, emoji })
+    .update(updateData)
     .eq("id", spaceId)
-    .eq("owner_id", user.id)
     .select()
     .single();
 

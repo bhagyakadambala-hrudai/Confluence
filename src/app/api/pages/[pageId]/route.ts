@@ -39,6 +39,7 @@ export async function PATCH(
   if (body.emoji !== undefined) updates.emoji = body.emoji;
   if (body.parent_id !== undefined) updates.parent_id = body.parent_id;
   if (body.labels !== undefined) updates.labels = body.labels;
+  if (body.space_id !== undefined) updates.space_id = body.space_id;
 
   const admin = createAdminClient();
   const { data, error } = await admin
