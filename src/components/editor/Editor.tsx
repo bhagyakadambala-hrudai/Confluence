@@ -1,6 +1,7 @@
 "use client";
 
 import { useEditor, EditorContent } from "@tiptap/react";
+import type { Editor as EditorType } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import TaskList from "@tiptap/extension-task-list";
@@ -24,14 +25,21 @@ interface EditorProps {
   onChange: (content: string) => void;
   editable?: boolean;
   placeholder?: string;
+  showToolbar?: boolean;
+  onEditorReady?: (editor: EditorType) => void;
 }
 
-export default function Editor({ content, onChange, editable = true, placeholder = "Start writing… (type / for commands)" }: EditorProps) {
+export default function Editor({
+  content,
+  onChange,
+  editable = true,
+  placeholder = "Start writing… (type / for commands)",
+  showToolbar = true,
+  onEditorReady,
+}: EditorProps) {
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({
-        codeBlock: false,
-      }),
+      StarterKit.configure({ codeBlock: false }),
       Underline,
       TaskList,
       TaskItem.configure({ nested: true }),
@@ -46,9 +54,7 @@ export default function Editor({ content, onChange, editable = true, placeholder
     ],
     content,
     editable,
-    onUpdate: ({ editor }) => {
-      onChange(editor.getHTML());
-    },
+    onUpdate: ({ editor }) => onChange(editor.getHTML()),
   });
 
   useEffect(() => {
@@ -57,11 +63,18 @@ export default function Editor({ content, onChange, editable = true, placeholder
     }
   }, [content]);
 
+  useEffect(() => {
+    if (editor && onEditorReady) onEditorReady(editor);
+  }, [editor]);
+
   return (
     <div className="flex flex-col min-h-full">
-      {editable && editor && <Toolbar editor={editor} />}
-      <div className="flex-1 px-8 py-6">
-        <EditorContent editor={editor} className="prose prose-slate dark:prose-invert max-w-none min-h-[400px] focus:outline-none" />
+      {showToolbar && editable && editor && <Toolbar editor={editor} />}
+      <div className="flex-1">
+        <EditorContent
+          editor={editor}
+          className="prose prose-slate dark:prose-invert max-w-none min-h-[300px] focus:outline-none"
+        />
       </div>
     </div>
   );

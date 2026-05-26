@@ -3,13 +3,16 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
+import type { Editor as EditorType } from "@tiptap/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import CommentSection from "@/components/comments/CommentSection";
 import LabelPicker from "./LabelPicker";
+import Toolbar from "@/components/editor/Toolbar";
 import { toast } from "sonner";
 import {
-  Trash2, Loader2, Share2, MoreHorizontal, Link as LinkIcon,
-  Lock, Smile, Table2, Info, List, ChevronRight, FileText, History,
+  Trash2, Loader2, MoreHorizontal, Link as LinkIcon,
+  Lock, Smile, Table2, Info, List, ChevronRight,
+  FileText, History, ChevronLeft,
 } from "lucide-react";
 import Link from "next/link";
 import { getInitials } from "@/lib/utils";
@@ -35,38 +38,21 @@ interface PageEditorProps {
 
 type SaveStatus = "saved" | "saving" | "unsaved";
 
-/* ── Live Doc icon ── */
-function LiveDocIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 28 28" className={className ?? "h-8 w-8"} fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect x="3" y="2" width="17" height="22" rx="2.5" stroke="#42526E" strokeWidth="1.8" />
-      <line x1="7" y1="8" x2="16" y2="8" stroke="#42526E" strokeWidth="1.6" strokeLinecap="round" />
-      <line x1="7" y1="12" x2="16" y2="12" stroke="#42526E" strokeWidth="1.6" strokeLinecap="round" />
-      <line x1="7" y1="16" x2="12" y2="16" stroke="#42526E" strokeWidth="1.6" strokeLinecap="round" />
-      <polygon points="18,18 26,22 18,26" fill="#42526E" opacity="0.85" />
-    </svg>
-  );
-}
-
-/* ── Quick-insert floating bar (shown when editor is empty) ── */
-const TEMPLATE_QUICKPICKS = [
-  { label: "1-on-1 Meeting", icon: <FileText className="h-3.5 w-3.5" /> },
-  { label: "4 Ls Retrospective", icon: <FileText className="h-3.5 w-3.5" /> },
-  { label: "5 Whys Analysis", icon: <FileText className="h-3.5 w-3.5" /> },
-];
-const ELEMENT_QUICKPICKS = [
-  { label: "Table", icon: <Table2 className="h-3.5 w-3.5" /> },
-  { label: "Info panel", icon: <Info className="h-3.5 w-3.5" /> },
-  { label: "Table of contents", icon: <List className="h-3.5 w-3.5" /> },
+/* ── Quick-insert bar (shown when editor content is empty) ── */
+const TEMPLATES_BAR = [
+  { label: "Project plan", icon: <FileText className="h-3.5 w-3.5" /> },
+  { label: "Meeting notes", icon: <FileText className="h-3.5 w-3.5" /> },
+  { label: "End of week status r...", icon: <FileText className="h-3.5 w-3.5" /> },
 ];
 
-function QuickInsertBar() {
+function QuickInsertBar({ onInsert }: { onInsert: (type: string) => void }) {
   return (
-    <div className="mx-auto mt-12 max-w-2xl rounded-xl border border-[#DFE1E6] dark:border-slate-700 bg-white dark:bg-[#1e2d3d] shadow-md overflow-hidden">
+    <div className="mx-auto mt-10 max-w-2xl rounded-xl border border-[#DFE1E6] dark:border-slate-700 bg-white dark:bg-[#1e2d3d] shadow-md overflow-hidden select-none">
       <div className="flex items-center flex-wrap gap-0.5 px-2 py-1.5 border-b border-[#F4F5F7] dark:border-slate-700">
-        {TEMPLATE_QUICKPICKS.map((item) => (
+        {TEMPLATES_BAR.map((item) => (
           <button
             key={item.label}
+            onMouseDown={(e) => { e.preventDefault(); onInsert("template:" + item.label); }}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-[#42526E] dark:text-slate-300 hover:bg-[#F4F5F7] dark:hover:bg-slate-700 transition-colors"
           >
             <span className="text-[#6B778C]">{item.icon}</span>
@@ -81,16 +67,24 @@ function QuickInsertBar() {
         </Link>
       </div>
       <div className="flex items-center flex-wrap gap-0.5 px-2 py-1.5">
-        {ELEMENT_QUICKPICKS.map((item) => (
+        {[
+          { label: "Table", icon: <Table2 className="h-3.5 w-3.5" />, action: "table" },
+          { label: "Info panel", icon: <Info className="h-3.5 w-3.5" />, action: "info" },
+          { label: "Table of contents", icon: <List className="h-3.5 w-3.5" />, action: "toc" },
+        ].map((item) => (
           <button
             key={item.label}
+            onMouseDown={(e) => { e.preventDefault(); onInsert(item.action); }}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-[#42526E] dark:text-slate-300 hover:bg-[#F4F5F7] dark:hover:bg-slate-700 transition-colors"
           >
             <span className="text-[#6B778C]">{item.icon}</span>
             {item.label}
           </button>
         ))}
-        <button className="flex items-center gap-1 px-3 py-1.5 rounded-md text-sm text-[#42526E] dark:text-slate-300 hover:bg-[#F4F5F7] dark:hover:bg-slate-700 transition-colors ml-auto">
+        <button
+          onMouseDown={(e) => { e.preventDefault(); onInsert("more"); }}
+          className="flex items-center gap-1 px-3 py-1.5 rounded-md text-sm text-[#42526E] dark:text-slate-300 hover:bg-[#F4F5F7] dark:hover:bg-slate-700 transition-colors ml-auto"
+        >
           More elements <ChevronRight className="h-3 w-3" />
         </button>
       </div>
@@ -105,6 +99,7 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
   const [pageLabels, setPageLabels] = useState<string[]>(page.labels || []);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [editor, setEditor] = useState<EditorType | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSaved = useRef({ title: page.title, content: page.content || "" });
 
@@ -133,9 +128,20 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
     if (!changed) return;
     setSaveStatus("unsaved");
     if (saveTimer.current) clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(() => save(title, content), 3000);
+    saveTimer.current = setTimeout(() => save(title, content), 2000);
     return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
   }, [title, content, save]);
+
+  async function handlePublish() {
+    await save(title, content);
+    const resp = await fetch(`/api/pages/${page.id}/versions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title, content }),
+    });
+    if (resp.ok) toast.success("Page published!");
+    else toast.error("Failed to publish");
+  }
 
   async function handleDelete() {
     const resp = await fetch(`/api/pages/${page.id}`, { method: "DELETE" });
@@ -159,131 +165,183 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
   async function handleShare() {
     try {
       await navigator.clipboard.writeText(window.location.href);
-      toast.success("Link copied to clipboard");
+      toast.success("Link copied!");
     } catch {
       toast.error("Could not copy link");
+    }
+  }
+
+  function handleQuickInsert(type: string) {
+    if (!editor) return;
+    if (type === "table") {
+      editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
+    } else if (type === "info") {
+      editor.chain().focus().toggleBlockquote().run();
+    } else if (type === "toc" || type.startsWith("template:")) {
+      router.push("/templates");
+    } else if (type === "more") {
+      toast("More elements coming soon");
     }
   }
 
   return (
     <div className="flex flex-col min-h-full bg-white dark:bg-[#1B2A3B]">
 
-      {/* ── Top action bar ── */}
-      <div className="flex items-center justify-end px-5 py-2 border-b border-[#DFE1E6] dark:border-slate-700 bg-white dark:bg-[#1B2A3B] sticky top-0 z-10 gap-1.5">
+      {/* ── Sticky header: top bar + toolbar ── */}
+      <div className="sticky top-0 z-20">
 
-        {/* Save status */}
-        <div className="flex items-center gap-1 text-sm text-[#6B778C] dark:text-slate-400 mr-2 min-w-[60px] justify-end">
-          {saveStatus === "saving" && (
-            <><Loader2 className="h-3 w-3 animate-spin" /><span>Saving</span></>
-          )}
-          {saveStatus === "saved" && <span>Saved</span>}
-          {saveStatus === "unsaved" && <span>Unsaved</span>}
-        </div>
+        {/* Row 1: top action bar */}
+        <div className="flex items-center justify-between px-4 py-2 border-b border-[#DFE1E6] dark:border-slate-700 bg-white dark:bg-[#1B2A3B] h-12">
 
-        {/* Author avatar(s) */}
-        <Avatar className="h-7 w-7 border-2 border-white dark:border-[#1B2A3B]">
-          <AvatarImage src={authorAvatar} />
-          <AvatarFallback className="text-[10px] bg-[#0052CC] text-white font-bold">
-            {getInitials(authorName)}
-          </AvatarFallback>
-        </Avatar>
-
-        {/* Share */}
-        <button
-          onClick={handleShare}
-          className="flex items-center gap-1.5 px-3 h-8 text-sm text-[#42526E] dark:text-slate-300 border border-[#DFE1E6] dark:border-slate-600 rounded hover:bg-[#F4F5F7] dark:hover:bg-slate-700 transition-colors ml-1"
-        >
-          <Lock className="h-3 w-3" />
-          Share
-        </button>
-
-        {/* Link */}
-        <button
-          onClick={handleShare}
-          className="h-8 w-8 flex items-center justify-center text-[#42526E] dark:text-slate-300 hover:bg-[#F4F5F7] dark:hover:bg-slate-700 rounded transition-colors"
-        >
-          <LinkIcon className="h-3.5 w-3.5" />
-        </button>
-
-        {/* More */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="h-8 w-8 flex items-center justify-center text-[#42526E] dark:text-slate-300 hover:bg-[#F4F5F7] dark:hover:bg-slate-700 rounded transition-colors">
-              <MoreHorizontal className="h-4 w-4" />
+          {/* Left: back + breadcrumb */}
+          <div className="flex items-center gap-1 min-w-0">
+            <button
+              onClick={() => router.push(`/spaces/${page.space_id}`)}
+              className="h-7 w-7 flex items-center justify-center rounded hover:bg-[#EBECF0] dark:hover:bg-slate-700 transition-colors shrink-0"
+            >
+              <ChevronLeft className="h-4 w-4 text-[#42526E] dark:text-slate-300" />
             </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-52">
-            <DropdownMenuItem asChild>
-              <Link href={`/spaces/${page.space_id}/pages/${page.id}/history`} className="flex items-center gap-2">
-                <History className="h-4 w-4" /> Page history
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <LabelPicker
-                spaceId={page.space_id}
-                availableLabels={labels}
-                selectedLabelIds={pageLabels}
-                onChange={handleLabelChange}
-              />
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            {!deleteConfirm ? (
-              <DropdownMenuItem onClick={() => setDeleteConfirm(true)} className="text-red-600 focus:text-red-600">
-                <Trash2 className="h-4 w-4 mr-2" /> Delete page
-              </DropdownMenuItem>
-            ) : (
-              <DropdownMenuItem onClick={handleDelete} className="text-red-600 font-semibold focus:text-red-600">
-                Confirm delete
-              </DropdownMenuItem>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-
-      {/* ── Page content ── */}
-      <div className="flex-1 max-w-4xl mx-auto w-full px-8 md:px-16 py-10">
-
-        {/* Doc icon + Title */}
-        <div className="flex items-start gap-3 mb-5">
-          <div className="mt-2.5 shrink-0">
-            <LiveDocIcon className="h-7 w-7" />
+            {/* Doc type icon */}
+            <svg viewBox="0 0 16 16" className="h-4 w-4 shrink-0 text-[#42526E] dark:text-slate-400" fill="none">
+              <rect x="2" y="1" width="10" height="13" rx="1.5" stroke="currentColor" strokeWidth="1.4" />
+              <line x1="4.5" y1="5" x2="9.5" y2="5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+              <line x1="4.5" y1="7.5" x2="9.5" y2="7.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+              <line x1="4.5" y1="10" x2="7.5" y2="10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+              <polygon points="10.5,10 14,12 10.5,14" fill="currentColor" opacity="0.8" />
+            </svg>
+            <span className="text-sm font-medium text-[#172B4D] dark:text-slate-200 truncate max-w-[200px] ml-1">
+              {title || "Untitled"}
+            </span>
           </div>
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Give this page a title"
-            className="flex-1 text-[2rem] md:text-[2.4rem] font-bold bg-transparent border-none outline-none placeholder:text-[#B3BAC5] dark:placeholder:text-slate-600 text-[#172B4D] dark:text-white leading-tight"
-          />
-        </div>
 
-        {/* Author + reaction + labels */}
-        <div className="flex items-center gap-3 mb-8 flex-wrap">
-          <div className="flex items-center gap-2">
-            <Avatar className="h-6 w-6">
+          {/* Right: save + author + publish + close + share + link + more */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            {/* Save status */}
+            <span className="text-sm text-[#6B778C] dark:text-slate-400 mr-1">
+              {saveStatus === "saving" && (
+                <span className="flex items-center gap-1"><Loader2 className="h-3 w-3 animate-spin" />Saving</span>
+              )}
+              {saveStatus === "saved" && "Saved"}
+              {saveStatus === "unsaved" && "Unsaved"}
+            </span>
+
+            {/* Author avatar */}
+            <Avatar className="h-7 w-7 border-2 border-white dark:border-[#1B2A3B] ring-1 ring-[#0052CC]">
               <AvatarImage src={authorAvatar} />
               <AvatarFallback className="text-[10px] bg-[#0052CC] text-white font-bold">
                 {getInitials(authorName)}
               </AvatarFallback>
             </Avatar>
-            <span className="text-sm text-[#172B4D] dark:text-slate-300">
-              <span className="text-[#6B778C] dark:text-slate-400">By </span>
-              <span className="font-medium">{authorName}</span>
-            </span>
-          </div>
 
-          <button className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-[#DFE1E6] dark:border-slate-600 text-xs text-[#6B778C] dark:text-slate-400 hover:bg-[#F4F5F7] dark:hover:bg-slate-700 transition-colors">
-            <Smile className="h-3.5 w-3.5" />
+            {/* Publish */}
+            <button
+              onClick={handlePublish}
+              className="flex items-center gap-1 px-3 h-8 bg-[#0052CC] hover:bg-[#0065FF] text-white text-sm font-semibold rounded transition-colors"
+            >
+              Publish…
+            </button>
+
+            {/* Close */}
+            <button
+              onClick={() => router.push(`/spaces/${page.space_id}`)}
+              className="px-3 h-8 text-sm text-[#42526E] dark:text-slate-300 hover:bg-[#EBECF0] dark:hover:bg-slate-700 rounded transition-colors border border-[#DFE1E6] dark:border-slate-600"
+            >
+              Close
+            </button>
+
+            {/* Share */}
+            <button
+              onClick={handleShare}
+              className="flex items-center gap-1.5 px-2.5 h-8 text-sm text-[#42526E] dark:text-slate-300 border border-[#DFE1E6] dark:border-slate-600 rounded hover:bg-[#EBECF0] dark:hover:bg-slate-700 transition-colors"
+            >
+              <Lock className="h-3 w-3" />
+              Share
+            </button>
+
+            {/* Link icon */}
+            <button
+              onClick={handleShare}
+              className="h-8 w-8 flex items-center justify-center text-[#42526E] dark:text-slate-300 hover:bg-[#EBECF0] dark:hover:bg-slate-700 rounded transition-colors"
+            >
+              <LinkIcon className="h-3.5 w-3.5" />
+            </button>
+
+            {/* More ··· */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="h-8 w-8 flex items-center justify-center text-[#42526E] dark:text-slate-300 hover:bg-[#EBECF0] dark:hover:bg-slate-700 rounded transition-colors">
+                  <MoreHorizontal className="h-4 w-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52">
+                <DropdownMenuItem asChild>
+                  <Link href={`/spaces/${page.space_id}/pages/${page.id}/history`} className="flex items-center gap-2">
+                    <History className="h-4 w-4" /> Page history
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <LabelPicker
+                    spaceId={page.space_id}
+                    availableLabels={labels}
+                    selectedLabelIds={pageLabels}
+                    onChange={handleLabelChange}
+                  />
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                {!deleteConfirm ? (
+                  <DropdownMenuItem onClick={() => setDeleteConfirm(true)} className="text-red-600 focus:text-red-600">
+                    <Trash2 className="h-4 w-4 mr-2" /> Delete page
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem onClick={handleDelete} className="text-red-600 font-semibold focus:text-red-600">
+                    Confirm delete
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+
+        {/* Row 2: Toolbar (shown once editor is ready) */}
+        {editor && <Toolbar editor={editor} />}
+      </div>
+
+      {/* ── Page content ── */}
+      <div className="flex-1 max-w-4xl mx-auto w-full px-8 md:px-16 py-10">
+
+        {/* Title */}
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Give this page a title"
+          className="w-full text-[2.2rem] md:text-[2.6rem] font-bold bg-transparent border-none outline-none placeholder:text-[#B3BAC5] dark:placeholder:text-slate-600 text-[#172B4D] dark:text-white leading-tight mb-4"
+        />
+
+        {/* By [author] */}
+        <div className="flex items-center gap-2 mb-6">
+          <Avatar className="h-6 w-6">
+            <AvatarImage src={authorAvatar} />
+            <AvatarFallback className="text-[10px] bg-[#0052CC] text-white font-bold">
+              {getInitials(authorName)}
+            </AvatarFallback>
+          </Avatar>
+          <span className="text-sm text-[#6B778C] dark:text-slate-400">
+            By <span className="text-[#172B4D] dark:text-slate-200 font-medium">{authorName}</span>
+          </span>
+          <button className="flex items-center gap-1 px-2 py-0.5 rounded-full border border-[#DFE1E6] dark:border-slate-600 text-xs text-[#6B778C] dark:text-slate-400 hover:bg-[#F4F5F7] dark:hover:bg-slate-700 transition-colors">
+            <Smile className="h-3 w-3" />
             Add a reaction
           </button>
 
+          {/* Labels */}
           {pageLabels.length > 0 && (
-            <div className="flex items-center gap-1.5 flex-wrap">
+            <div className="flex items-center gap-1.5">
               {pageLabels.map((lid) => {
                 const label = labels.find((l) => l.id === lid);
                 if (!label) return null;
                 return (
-                  <span key={lid} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium text-white" style={{ backgroundColor: label.color }}>
+                  <span key={lid} className="px-2 py-0.5 rounded-full text-xs font-medium text-white" style={{ backgroundColor: label.color }}>
                     {label.name}
                   </span>
                 );
@@ -292,17 +350,30 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
           )}
         </div>
 
-        {/* Editor */}
+        {/* Editor placeholder hint (shown when empty) */}
+        {isEmpty && (
+          <p className="text-[#97A0AF] dark:text-slate-500 text-sm mb-2 pointer-events-none select-none">
+            Press{" "}
+            <kbd className="px-1.5 py-0.5 bg-[#F4F5F7] dark:bg-slate-700 border border-[#DFE1E6] dark:border-slate-600 rounded text-xs font-mono text-[#42526E] dark:text-slate-300">space</kbd>
+            {" "}to Ask Rovo or{" "}
+            <kbd className="px-1.5 py-0.5 bg-[#F4F5F7] dark:bg-slate-700 border border-[#DFE1E6] dark:border-slate-600 rounded text-xs font-mono text-[#42526E] dark:text-slate-300">/</kbd>
+            {" "}to insert elements
+          </p>
+        )}
+
+        {/* Editor (toolbar managed externally) */}
         <div className="min-h-[200px]">
           <Editor
             content={content}
             onChange={setContent}
-            placeholder="Press / to insert elements"
+            showToolbar={false}
+            placeholder=""
+            onEditorReady={setEditor}
           />
         </div>
 
-        {/* Quick-insert bar when empty */}
-        {isEmpty && <QuickInsertBar />}
+        {/* Quick-insert bar (when empty) */}
+        {isEmpty && <QuickInsertBar onInsert={handleQuickInsert} />}
 
         {/* Comments */}
         <div className="mt-16 border-t border-[#F4F5F7] dark:border-slate-700 pt-8">
