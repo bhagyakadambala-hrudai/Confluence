@@ -255,7 +255,11 @@ export default function HomeContent({ recentPages, firstName }: HomeContentProps
   const [createSpaceOpen, setCreateSpaceOpen] = useState(false);
 
   function handleGetStartedAction(action: string | null) {
-    if (action === "create_space") setCreateSpaceOpen(true);
+    if (action === "create_page") {
+      window.location.href = "/pages/new";
+    } else if (action === "create_space") {
+      setCreateSpaceOpen(true);
+    }
   }
 
   return (
