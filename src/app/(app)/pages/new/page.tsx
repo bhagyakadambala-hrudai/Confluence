@@ -12,9 +12,12 @@ export default async function NewPagePage() {
     .order("created_at")
     .limit(1);
 
-  if (!spaces || spaces.length === 0) redirect("/");
+  // No spaces yet — send user to create a space first
+  if (!spaces || spaces.length === 0) {
+    redirect("/spaces/new");
+  }
 
-  const { data: page } = await supabase
+  const { data: page, error } = await supabase
     .from("pages")
     .insert({
       space_id: spaces[0].id,
@@ -28,7 +31,7 @@ export default async function NewPagePage() {
     .select("id, space_id")
     .single();
 
-  if (!page) redirect("/");
+  if (error || !page) redirect("/");
 
   redirect(`/spaces/${page.space_id}/pages/${page.id}/edit`);
 }

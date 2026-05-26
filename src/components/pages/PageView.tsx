@@ -77,7 +77,7 @@ export default function PageView({
   }
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-white dark:bg-[#1B2A3B]">
+    <div className="bg-white dark:bg-[#1B2A3B]">
       {/* ── Sticky top bar ── */}
       <div className="sticky top-0 z-20 h-12 flex items-center justify-between px-4 border-b border-[#DFE1E6] dark:border-slate-700 bg-white dark:bg-[#1B2A3B]">
         {/* Left: breadcrumb */}
@@ -175,8 +175,7 @@ export default function PageView({
       </div>
 
       {/* ── Page content ── */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-4xl mx-auto px-16 py-10">
+      <div className="max-w-4xl mx-auto px-16 py-10">
           {/* Title */}
           <h1 className="text-4xl font-bold text-[#172B4D] dark:text-white leading-tight mb-4">
             {page.emoji && <span className="mr-2">{page.emoji}</span>}
@@ -236,7 +235,6 @@ export default function PageView({
             <CommentSection pageId={page.id} currentUserId={currentUserId} />
           </div>
         </div>
-      </div>
     </div>
   );
 }
