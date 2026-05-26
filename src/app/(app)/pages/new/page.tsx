@@ -30,5 +30,5 @@ export default async function NewPagePage() {
 
   if (!page) redirect("/");
 
-  redirect(`/spaces/${page.space_id}/pages/${page.id}`);
+  redirect(`/spaces/${page.space_id}/pages/${page.id}/edit`);
 }
