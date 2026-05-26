@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import PageView from "@/components/pages/PageView";
 
 export default async function PageViewRoute({
@@ -10,8 +11,11 @@ export default async function PageViewRoute({
   const { spaceId, pageId } = await params;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+  if (!user) notFound();
 
-  const { data: page } = await supabase
+  const admin = createAdminClient();
+
+  const { data: page } = await admin
     .from("pages")
     .select("*, profiles(id, full_name, avatar_url)")
     .eq("id", pageId)
@@ -19,21 +23,21 @@ export default async function PageViewRoute({
 
   if (!page) notFound();
 
-  const { data: space } = await supabase
+  const { data: space } = await admin
     .from("spaces")
     .select("id, name, emoji")
     .eq("id", spaceId)
     .single();
 
-  const { data: parentPage } = page.parent_id
-    ? await supabase
+  const parentPageResult = page.parent_id
+    ? await admin
         .from("pages")
         .select("id, title, emoji")
         .eq("id", page.parent_id)
         .single()
     : { data: null };
 
-  const { data: labels } = await supabase
+  const { data: labels } = await admin
     .from("labels")
     .select("*")
     .eq("space_id", spaceId);
@@ -42,9 +46,9 @@ export default async function PageViewRoute({
     <PageView
       page={page}
       space={space}
-      parentPage={parentPage}
+      parentPage={parentPageResult.data}
       labels={labels || []}
-      currentUserId={user!.id}
+      currentUserId={user.id}
     />
   );
 }
