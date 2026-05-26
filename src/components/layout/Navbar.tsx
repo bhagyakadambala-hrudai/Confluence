@@ -46,12 +46,10 @@ export default function Navbar({ user, onToggleSidebar }: NavbarProps) {
       }
     };
     window.addEventListener("keydown", handleKeyDown);
-    // Fetch spaces
-    supabase
-      .from("spaces")
-      .select("id, name, emoji")
-      .order("created_at")
-      .then(({ data }) => setSpaces(data || []));
+    // Fetch spaces via API (avoids client-side RLS issues)
+    fetch("/api/spaces")
+      .then((r) => r.ok ? r.json() : [])
+      .then((data) => setSpaces(Array.isArray(data) ? data : []));
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 

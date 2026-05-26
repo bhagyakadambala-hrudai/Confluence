@@ -100,31 +100,22 @@ export default function Sidebar({ open, onToggle, user }: SidebarProps) {
   // Fetch recent pages when recent flyout opens
   useEffect(() => {
     if (flyout === "recent" && recentPages.length === 0) {
-      supabase
-        .from("pages")
-        .select("id,title,emoji,space_id,updated_at,spaces(name)")
-        .order("updated_at", { ascending: false })
-        .limit(20)
-        .then(({ data }) => {
-          setRecentPages((data || []).map((p) => ({
-            ...p,
-            spaces: (p.spaces as unknown) as { name: string } | null,
-          })));
-        });
+      fetch("/api/pages/recent")
+        .then((r) => r.ok ? r.json() : [])
+        .then((data) => setRecentPages(Array.isArray(data) ? data : []));
     }
   }, [flyout]);
 
   async function fetchSpaces() {
-    const { data } = await supabase
-      .from("spaces").select("id,name,emoji").order("created_at");
-    setSpaces(data || []);
+    const res = await fetch("/api/spaces");
+    const data = res.ok ? await res.json() : [];
+    setSpaces(Array.isArray(data) ? data : []);
   }
 
   async function fetchPages(spaceId: string) {
-    const { data } = await supabase
-      .from("pages").select("id,title,emoji,parent_id")
-      .eq("space_id", spaceId).order("position");
-    setPages(data || []);
+    const res = await fetch(`/api/pages?space_id=${spaceId}`);
+    const data = res.ok ? await res.json() : [];
+    setPages(Array.isArray(data) ? data : []);
   }
 
   async function createPage() {

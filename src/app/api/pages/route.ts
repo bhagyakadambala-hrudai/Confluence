@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -9,7 +10,8 @@ export async function GET(request: Request) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  let query = supabase
+  const admin = createAdminClient();
+  let query = admin
     .from("pages")
     .select("id, title, emoji, parent_id, space_id, position, created_at, updated_at")
     .order("position", { ascending: true });
@@ -31,13 +33,14 @@ export async function POST(request: Request) {
 
   if (!space_id) return NextResponse.json({ error: "space_id is required" }, { status: 400 });
 
-  const { count } = await supabase
+  const admin = createAdminClient();
+  const { count } = await admin
     .from("pages")
     .select("*", { count: "exact", head: true })
     .eq("space_id", space_id)
     .is("parent_id", parent_id || null);
 
-  const { data: page, error } = await supabase
+  const { data: page, error } = await admin
     .from("pages")
     .insert({
       space_id,

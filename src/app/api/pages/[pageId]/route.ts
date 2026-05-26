@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function GET(
   _req: Request,
@@ -10,7 +11,8 @@ export async function GET(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { data, error } = await supabase
+  const admin = createAdminClient();
+  const { data, error } = await admin
     .from("pages")
     .select("*, profiles(id, full_name, avatar_url)")
     .eq("id", pageId)
@@ -38,7 +40,8 @@ export async function PATCH(
   if (body.parent_id !== undefined) updates.parent_id = body.parent_id;
   if (body.labels !== undefined) updates.labels = body.labels;
 
-  const { data, error } = await supabase
+  const admin = createAdminClient();
+  const { data, error } = await admin
     .from("pages")
     .update(updates)
     .eq("id", pageId)
@@ -58,7 +61,8 @@ export async function DELETE(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { error } = await supabase.from("pages").delete().eq("id", pageId);
+  const admin = createAdminClient();
+  const { error } = await admin.from("pages").delete().eq("id", pageId);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ success: true });
 }
