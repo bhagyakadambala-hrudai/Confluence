@@ -105,27 +105,23 @@ export default function Navbar({ user, onToggleSidebar }: NavbarProps) {
               <div className="px-3 py-1.5">
                 <p className="text-xs font-semibold text-[#6B778C] uppercase tracking-wide">Create</p>
               </div>
-              <DropdownMenuItem asChild>
-                <Link href="/templates" className="flex items-center gap-3 px-3 py-2">
-                  <div className="h-7 w-7 rounded bg-[#EAE6FF] flex items-center justify-center shrink-0">
-                    <LayoutTemplate className="h-4 w-4 text-[#6554C0]" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-[#172B4D]">Start from template</p>
-                    <p className="text-xs text-[#6B778C]">Ready-made page layouts</p>
-                  </div>
-                </Link>
+              <DropdownMenuItem onClick={() => router.push("/templates")} className="flex items-center gap-3 px-3 py-2 cursor-pointer">
+                <div className="h-7 w-7 rounded bg-[#EAE6FF] flex items-center justify-center shrink-0">
+                  <LayoutTemplate className="h-4 w-4 text-[#6554C0]" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-[#172B4D]">Start from template</p>
+                  <p className="text-xs text-[#6B778C]">Ready-made page layouts</p>
+                </div>
               </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/pages/new" className="flex items-center gap-3 px-3 py-2">
-                  <div className="h-7 w-7 rounded bg-[#DEEBFF] flex items-center justify-center shrink-0">
-                    <PenLine className="h-4 w-4 text-[#0052CC]" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-[#172B4D]">Page</p>
-                    <p className="text-xs text-[#6B778C]">Blank document</p>
-                  </div>
-                </Link>
+              <DropdownMenuItem onClick={() => router.push("/pages/new")} className="flex items-center gap-3 px-3 py-2 cursor-pointer">
+                <div className="h-7 w-7 rounded bg-[#DEEBFF] flex items-center justify-center shrink-0">
+                  <PenLine className="h-4 w-4 text-[#0052CC]" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-[#172B4D]">Page</p>
+                  <p className="text-xs text-[#6B778C]">Blank document</p>
+                </div>
               </DropdownMenuItem>
               <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 cursor-pointer">
                 <div className="h-7 w-7 rounded bg-[#E3FCEF] flex items-center justify-center shrink-0">
