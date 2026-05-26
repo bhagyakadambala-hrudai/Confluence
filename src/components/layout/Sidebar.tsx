@@ -137,7 +137,7 @@ export default function Sidebar({ open, onToggle, user }: SidebarProps) {
     if (resp.ok) {
       const page = await resp.json();
       fetchPages(activeSpaceId);
-      router.push(`/spaces/${activeSpaceId}/pages/${page.id}`);
+      router.push(`/spaces/${activeSpaceId}/pages/${page.id}/edit`);
     }
   }
 
