@@ -48,6 +48,8 @@ export default function Sidebar({ open, onToggle, user }: SidebarProps) {
   type FlyoutPanel = "recent" | "starred" | "spaces" | null;
   const [flyout, setFlyout] = useState<FlyoutPanel>(null);
   const [recentPages, setRecentPages] = useState<Array<{ id: string; title: string; emoji: string; space_id: string; updated_at: string; spaces: { name: string } | null }>>([]);
+  const [starredPages, setStarredPages] = useState<Array<{ id: string; title: string; emoji: string; space_id: string }>>([]);
+  const [starredSpaces, setStarredSpaces] = useState<Array<{ id: string; name: string; emoji: string }>>([]);
   const [flyoutSearch, setFlyoutSearch] = useState("");
   const flyoutRef = useRef<HTMLDivElement>(null);
 
@@ -100,31 +102,30 @@ export default function Sidebar({ open, onToggle, user }: SidebarProps) {
   // Fetch recent pages when recent flyout opens
   useEffect(() => {
     if (flyout === "recent" && recentPages.length === 0) {
-      supabase
-        .from("pages")
-        .select("id,title,emoji,space_id,updated_at,spaces(name)")
-        .order("updated_at", { ascending: false })
-        .limit(20)
-        .then(({ data }) => {
-          setRecentPages((data || []).map((p) => ({
-            ...p,
-            spaces: (p.spaces as unknown) as { name: string } | null,
-          })));
+      fetch("/api/pages/recent")
+        .then((r) => r.ok ? r.json() : [])
+        .then((data) => setRecentPages(Array.isArray(data) ? data : []));
+    }
+    if (flyout === "starred") {
+      fetch("/api/stars")
+        .then((r) => r.ok ? r.json() : { pages: [], spaces: [] })
+        .then((data) => {
+          setStarredPages(data.pages || []);
+          setStarredSpaces(data.spaces || []);
         });
     }
   }, [flyout]);
 
   async function fetchSpaces() {
-    const { data } = await supabase
-      .from("spaces").select("id,name,emoji").order("created_at");
-    setSpaces(data || []);
+    const res = await fetch("/api/spaces");
+    const data = res.ok ? await res.json() : [];
+    setSpaces(Array.isArray(data) ? data : []);
   }
 
   async function fetchPages(spaceId: string) {
-    const { data } = await supabase
-      .from("pages").select("id,title,emoji,parent_id")
-      .eq("space_id", spaceId).order("position");
-    setPages(data || []);
+    const res = await fetch(`/api/pages?space_id=${spaceId}`);
+    const data = res.ok ? await res.json() : [];
+    setPages(Array.isArray(data) ? data : []);
   }
 
   async function createPage() {
@@ -137,7 +138,7 @@ export default function Sidebar({ open, onToggle, user }: SidebarProps) {
     if (resp.ok) {
       const page = await resp.json();
       fetchPages(activeSpaceId);
-      router.push(`/spaces/${activeSpaceId}/pages/${page.id}`);
+      router.push(`/spaces/${activeSpaceId}/pages/${page.id}/edit`);
     }
   }
 
@@ -393,23 +394,63 @@ export default function Sidebar({ open, onToggle, user }: SidebarProps) {
                   <X className="h-4 w-4 text-[#6B778C]" />
                 </button>
               </div>
-              <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 text-center">
-                {/* Star empty state illustration */}
-                <div className="relative mb-4">
-                  <div className="h-16 w-16 bg-gradient-to-br from-[#FFAB00] to-[#FF8B00] rounded-xl flex items-center justify-center shadow-md rotate-6">
-                    <Star className="h-8 w-8 text-white fill-white" />
+              {starredPages.length === 0 && starredSpaces.length === 0 ? (
+                <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 text-center">
+                  <div className="relative mb-4">
+                    <div className="h-16 w-16 bg-gradient-to-br from-[#FFAB00] to-[#FF8B00] rounded-xl flex items-center justify-center shadow-md rotate-6">
+                      <Star className="h-8 w-8 text-white fill-white" />
+                    </div>
+                    <div className="absolute -top-2 -right-2 h-8 w-8 bg-[#6554C0] rounded-lg flex items-center justify-center shadow rotate-12 opacity-80">
+                      <FileText className="h-4 w-4 text-white" />
+                    </div>
                   </div>
-                  <div className="absolute -top-2 -right-2 h-8 w-8 bg-[#6554C0] rounded-lg flex items-center justify-center shadow rotate-12 opacity-80">
-                    <FileText className="h-4 w-4 text-white" />
-                  </div>
+                  <p className="font-semibold text-sm text-[#172B4D] dark:text-white mb-1">
+                    You haven&apos;t starred anything yet
+                  </p>
+                  <p className="text-xs text-[#6B778C] dark:text-slate-400 leading-relaxed">
+                    Mark items that are important to you with a star to quickly access them.
+                  </p>
                 </div>
-                <p className="font-semibold text-sm text-[#172B4D] dark:text-white mb-1">
-                  You haven&apos;t starred anything yet
-                </p>
-                <p className="text-xs text-[#6B778C] dark:text-slate-400 leading-relaxed">
-                  Mark items that are important to you with a star to quickly access them. You&apos;ll see those items here.
-                </p>
-              </div>
+              ) : (
+                <ScrollArea className="flex-1">
+                  <div className="px-2 py-2">
+                    {starredSpaces.length > 0 && (
+                      <>
+                        <p className="text-xs font-semibold text-[#6B778C] dark:text-slate-400 px-2 py-1.5 uppercase tracking-wide">Spaces</p>
+                        {starredSpaces.map((space) => (
+                          <Link
+                            key={space.id}
+                            href={`/spaces/${space.id}`}
+                            onClick={() => setFlyout(null)}
+                            className="flex items-center gap-2.5 px-2 py-2 rounded hover:bg-[#F1F2F4] dark:hover:bg-[#21262d] transition-colors group"
+                          >
+                            <span className="text-base shrink-0">{space.emoji || "📁"}</span>
+                            <span className="flex-1 text-sm text-[#172B4D] dark:text-slate-200 truncate group-hover:text-[#0052CC]">{space.name}</span>
+                          </Link>
+                        ))}
+                      </>
+                    )}
+                    {starredPages.length > 0 && (
+                      <>
+                        <p className="text-xs font-semibold text-[#6B778C] dark:text-slate-400 px-2 py-1.5 uppercase tracking-wide mt-1">Pages</p>
+                        {starredPages.map((page) => (
+                          <Link
+                            key={page.id}
+                            href={`/spaces/${page.space_id}/pages/${page.id}`}
+                            onClick={() => setFlyout(null)}
+                            className="flex items-center gap-2.5 px-2 py-2 rounded hover:bg-[#F1F2F4] dark:hover:bg-[#21262d] transition-colors group"
+                          >
+                            <span className="text-base shrink-0">{page.emoji || "📄"}</span>
+                            <span className="flex-1 text-sm text-[#172B4D] dark:text-slate-200 truncate group-hover:text-[#0052CC]">
+                              {page.title || "Untitled"}
+                            </span>
+                          </Link>
+                        ))}
+                      </>
+                    )}
+                  </div>
+                </ScrollArea>
+              )}
             </>
           )}
 

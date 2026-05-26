@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 
 export default async function NewPagePage() {
@@ -6,18 +7,59 @@ export default async function NewPagePage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: spaces } = await supabase
+  const admin = createAdminClient();
+
+  // Get the user's first space
+  let { data: spaces } = await admin
     .from("spaces")
     .select("id")
+    .or(`owner_id.eq.${user.id},id.in.(select space_id from space_members where user_id='${user.id}')`)
     .order("created_at")
     .limit(1);
 
-  if (!spaces || spaces.length === 0) redirect("/");
+  // Fallback: spaces owned by user
+  if (!spaces || spaces.length === 0) {
+    const { data: owned } = await admin
+      .from("spaces")
+      .select("id")
+      .eq("owner_id", user.id)
+      .order("created_at")
+      .limit(1);
+    spaces = owned;
+  }
 
-  const { data: page } = await supabase
+  // No spaces at all — auto-create a personal space so the editor opens directly
+  let spaceId: string;
+  if (!spaces || spaces.length === 0) {
+    const { data: newSpace } = await admin
+      .from("spaces")
+      .insert({
+        name: "My Space",
+        description: "Personal workspace",
+        emoji: "🏠",
+        owner_id: user.id,
+      })
+      .select("id")
+      .single();
+
+    if (!newSpace) redirect("/");
+
+    await admin.from("space_members").insert({
+      space_id: newSpace.id,
+      user_id: user.id,
+      role: "owner",
+    });
+
+    spaceId = newSpace.id;
+  } else {
+    spaceId = spaces[0].id;
+  }
+
+  // Create a blank page and open the editor
+  const { data: page } = await admin
     .from("pages")
     .insert({
-      space_id: spaces[0].id,
+      space_id: spaceId,
       title: "",
       content: "",
       emoji: "📄",
@@ -30,5 +72,5 @@ export default async function NewPagePage() {
 
   if (!page) redirect("/");
 
-  redirect(`/spaces/${page.space_id}/pages/${page.id}`);
+  redirect(`/spaces/${page.space_id}/pages/${page.id}/edit`);
 }

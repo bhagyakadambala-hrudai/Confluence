@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import PageView from "@/components/pages/PageView";
+import PageEditor from "@/components/pages/PageEditor";
 
-export default async function PageViewRoute({
+export default async function PageEditView({
   params,
 }: {
   params: Promise<{ spaceId: string; pageId: string }>;
@@ -39,7 +39,7 @@ export default async function PageViewRoute({
     .eq("space_id", spaceId);
 
   return (
-    <PageView
+    <PageEditor
       page={page}
       space={space}
       parentPage={parentPage}

@@ -14,7 +14,8 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import SearchModal from "@/components/search/SearchModal";
 import CreateSpaceModal from "@/components/spaces/CreateSpaceModal";
-import { Moon, Sun, Search, LogOut, Settings, User as UserIcon, Plus, HelpCircle, Bell, FileText, LayoutTemplate, Globe, PenLine, Database, Link2, ChevronRight } from "lucide-react";
+import { Moon, Sun, Search, LogOut, Settings, User as UserIcon, Plus, HelpCircle, FileText, LayoutTemplate, Globe, PenLine, Database, Link2, ChevronRight, ChevronDown } from "lucide-react";
+import NotificationDropdown from "@/components/layout/NotificationDropdown";
 import { useTheme } from "next-themes";
 import { getInitials } from "@/lib/utils";
 import { toast } from "sonner";
@@ -34,6 +35,8 @@ export default function Navbar({ user, onToggleSidebar }: NavbarProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [createSpaceOpen, setCreateSpaceOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [spaces, setSpaces] = useState<{ id: string; name: string; emoji: string }[]>([]);
+  const [spaceSearch, setSpaceSearch] = useState("");
 
   useEffect(() => {
     setMounted(true);
@@ -44,6 +47,10 @@ export default function Navbar({ user, onToggleSidebar }: NavbarProps) {
       }
     };
     window.addEventListener("keydown", handleKeyDown);
+    // Fetch spaces via API (avoids client-side RLS issues)
+    fetch("/api/spaces")
+      .then((r) => r.ok ? r.json() : [])
+      .then((data) => setSpaces(Array.isArray(data) ? data : []));
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
@@ -73,9 +80,42 @@ export default function Navbar({ user, onToggleSidebar }: NavbarProps) {
           <Link href="/" className="px-3 py-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded text-sm transition-colors">
             Home
           </Link>
-          <button className="px-3 py-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded text-sm transition-colors">
-            Spaces
-          </button>
+          <DropdownMenu onOpenChange={(open) => { if (open) setSpaceSearch(""); }}>
+            <DropdownMenuTrigger asChild>
+              <button className="px-3 py-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded text-sm transition-colors flex items-center gap-1">
+                Spaces <ChevronDown className="h-3 w-3" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-64 py-2">
+              <div className="px-3 pb-2">
+                <input
+                  placeholder="Filter spaces"
+                  className="w-full text-sm px-2 py-1.5 border border-[#DFE1E6] rounded outline-none focus:border-[#0052CC]"
+                  value={spaceSearch}
+                  onChange={(e) => setSpaceSearch(e.target.value)}
+                />
+              </div>
+              {spaces
+                .filter((s) => !spaceSearch || s.name.toLowerCase().includes(spaceSearch.toLowerCase()))
+                .map((space) => (
+                  <DropdownMenuItem
+                    key={space.id}
+                    onClick={() => router.push(`/spaces/${space.id}`)}
+                    className="flex items-center gap-2.5 px-3 py-2 cursor-pointer"
+                  >
+                    <span className="text-lg">{space.emoji}</span>
+                    <span className="text-sm font-medium">{space.name}</span>
+                  </DropdownMenuItem>
+                ))}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => router.push("/spaces/new")}
+                className="px-3 py-2 text-sm cursor-pointer"
+              >
+                + Create space
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <button className="px-3 py-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded text-sm transition-colors">
             Recent
           </button>
@@ -163,9 +203,7 @@ export default function Navbar({ user, onToggleSidebar }: NavbarProps) {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <button className="h-8 w-8 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 rounded transition-colors">
-            <Bell className="h-4 w-4" />
-          </button>
+          <NotificationDropdown />
           <button className="h-8 w-8 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 rounded transition-colors">
             <HelpCircle className="h-4 w-4" />
           </button>
@@ -195,10 +233,10 @@ export default function Navbar({ user, onToggleSidebar }: NavbarProps) {
                 <p className="text-sm font-semibold truncate">{fullName}</p>
                 <p className="text-xs text-muted-foreground truncate">{user.email}</p>
               </div>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push("/profile")}>
                 <UserIcon className="h-4 w-4 mr-2" /> Profile
               </DropdownMenuItem>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push("/settings")}>
                 <Settings className="h-4 w-4 mr-2" /> Settings
               </DropdownMenuItem>
               <DropdownMenuSeparator />

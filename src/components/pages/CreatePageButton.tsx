@@ -33,7 +33,7 @@ export default function CreatePageButton({ spaceId, parentId, className }: Creat
     setLoading(false);
     if (resp.ok) {
       const page = await resp.json();
-      router.push(`/spaces/${spaceId}/pages/${page.id}`);
+      router.push(`/spaces/${spaceId}/pages/${page.id}/edit`);
     } else {
       toast.error("Failed to create page");
     }

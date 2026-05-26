@@ -87,7 +87,19 @@ alter table public.comments enable row level security;
 alter table public.labels enable row level security;
 
 -- ============================================================
--- STEP 3: Add all RLS policies (all tables now exist)
+-- STEP 3: Helper function (prevents recursive RLS policies)
+-- ============================================================
+
+create or replace function public.is_space_member(space_uuid uuid)
+returns boolean language sql security definer stable as $$
+  select exists (
+    select 1 from public.space_members
+    where space_id = space_uuid and user_id = auth.uid()
+  )
+$$;
+
+-- ============================================================
+-- STEP 4: Add all RLS policies (all tables now exist)
 -- ============================================================
 
 -- profiles
@@ -97,11 +109,10 @@ create policy "Profiles viewable by everyone"
 create policy "Users can update own profile"
   on profiles for update using (auth.uid() = id);
 
--- spaces (space_members now exists, safe to reference)
+-- spaces
 create policy "Spaces visible to members"
   on spaces for select using (
-    owner_id = auth.uid() or
-    exists (select 1 from space_members where space_id = spaces.id and user_id = auth.uid())
+    owner_id = auth.uid() or is_space_member(id)
   );
 
 create policy "Owners can update spaces"
@@ -116,8 +127,7 @@ create policy "Authenticated users can create spaces"
 -- space_members
 create policy "Members can view space members"
   on space_members for select using (
-    user_id = auth.uid() or
-    exists (select 1 from space_members sm2 where sm2.space_id = space_members.space_id and sm2.user_id = auth.uid())
+    user_id = auth.uid() or is_space_member(space_id)
   );
 
 create policy "Space owners can manage members"
@@ -131,26 +141,26 @@ create policy "Users can add themselves as owner"
 -- pages
 create policy "Pages visible to space members"
   on pages for select using (
-    exists (select 1 from space_members where space_id = pages.space_id and user_id = auth.uid())
-    or exists (select 1 from spaces where id = pages.space_id and owner_id = auth.uid())
+    exists (select 1 from spaces where id = pages.space_id and owner_id = auth.uid())
+    or is_space_member(pages.space_id)
   );
 
 create policy "Space members can create pages"
   on pages for insert with check (
-    exists (select 1 from space_members where space_id = pages.space_id and user_id = auth.uid())
-    or exists (select 1 from spaces where id = pages.space_id and owner_id = auth.uid())
+    exists (select 1 from spaces where id = pages.space_id and owner_id = auth.uid())
+    or is_space_member(pages.space_id)
   );
 
 create policy "Space members can update pages"
   on pages for update using (
-    exists (select 1 from space_members where space_id = pages.space_id and user_id = auth.uid())
-    or exists (select 1 from spaces where id = pages.space_id and owner_id = auth.uid())
+    exists (select 1 from spaces where id = pages.space_id and owner_id = auth.uid())
+    or is_space_member(pages.space_id)
   );
 
 create policy "Space members can delete pages"
   on pages for delete using (
-    exists (select 1 from space_members where space_id = pages.space_id and user_id = auth.uid())
-    or exists (select 1 from spaces where id = pages.space_id and owner_id = auth.uid())
+    exists (select 1 from spaces where id = pages.space_id and owner_id = auth.uid())
+    or is_space_member(pages.space_id)
   );
 
 -- page_versions
@@ -218,18 +228,18 @@ create policy "Authors can delete comments"
 -- labels
 create policy "Labels visible to space members"
   on labels for select using (
-    exists (select 1 from space_members where space_id = labels.space_id and user_id = auth.uid())
-    or exists (select 1 from spaces where id = labels.space_id and owner_id = auth.uid())
+    exists (select 1 from spaces where id = labels.space_id and owner_id = auth.uid())
+    or is_space_member(labels.space_id)
   );
 
 create policy "Space members can create labels"
   on labels for insert with check (
-    exists (select 1 from space_members where space_id = labels.space_id and user_id = auth.uid())
-    or exists (select 1 from spaces where id = labels.space_id and owner_id = auth.uid())
+    exists (select 1 from spaces where id = labels.space_id and owner_id = auth.uid())
+    or is_space_member(labels.space_id)
   );
 
 -- ============================================================
--- STEP 4: Auto-create profile trigger
+-- STEP 5: Auto-create profile trigger
 -- ============================================================
 
 create or replace function public.handle_new_user()
@@ -253,7 +263,7 @@ create or replace trigger on_auth_user_created
   for each row execute procedure public.handle_new_user();
 
 -- ============================================================
--- STEP 5: Realtime
+-- STEP 6: Realtime
 -- ============================================================
 
 alter publication supabase_realtime add table public.spaces;
@@ -262,7 +272,7 @@ alter publication supabase_realtime add table public.space_members;
 alter publication supabase_realtime add table public.comments;
 
 -- ============================================================
--- STEP 6: Storage bucket for images
+-- STEP 7: Storage bucket for images
 -- ============================================================
 
 insert into storage.buckets (id, name, public)

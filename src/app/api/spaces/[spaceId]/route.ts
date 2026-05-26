@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function GET(
   _req: Request,
@@ -10,12 +11,8 @@ export async function GET(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { data, error } = await supabase
-    .from("spaces")
-    .select("*")
-    .eq("id", spaceId)
-    .single();
-
+  const admin = createAdminClient();
+  const { data, error } = await admin.from("spaces").select("*").eq("id", spaceId).single();
   if (error) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json(data);
 }
@@ -30,13 +27,17 @@ export async function PATCH(
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
-  const { name, description, emoji } = body;
+  const updateData: Record<string, unknown> = {};
+  if (body.name !== undefined) updateData.name = body.name;
+  if (body.description !== undefined) updateData.description = body.description;
+  if (body.emoji !== undefined) updateData.emoji = body.emoji;
+  if (body.overview_content !== undefined) updateData.overview_content = body.overview_content;
 
-  const { data, error } = await supabase
+  const admin = createAdminClient();
+  const { data, error } = await admin
     .from("spaces")
-    .update({ name, description, emoji })
+    .update(updateData)
     .eq("id", spaceId)
-    .eq("owner_id", user.id)
     .select()
     .single();
 
@@ -53,12 +54,8 @@ export async function DELETE(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { error } = await supabase
-    .from("spaces")
-    .delete()
-    .eq("id", spaceId)
-    .eq("owner_id", user.id);
-
+  const admin = createAdminClient();
+  const { error } = await admin.from("spaces").delete().eq("id", spaceId).eq("owner_id", user.id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ success: true });
 }

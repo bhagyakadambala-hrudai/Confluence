@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -9,7 +10,9 @@ export async function GET(request: Request) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  let query = supabase.from("labels").select("*").order("name");
+  const admin = createAdminClient();
+
+  let query = admin.from("labels").select("*").order("name");
   if (spaceId) query = query.eq("space_id", spaceId);
 
   const { data, error } = await query;
