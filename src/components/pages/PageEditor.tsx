@@ -12,7 +12,9 @@ import { toast } from "sonner";
 import {
   Trash2, Loader2, MoreHorizontal, Link as LinkIcon,
   Lock, Smile, Table2, Info, List, ChevronRight,
-  FileText, History, ChevronLeft,
+  FileText, History, ChevronDown, Image as ImageIcon,
+  Sparkles, ALargeSmall, ArrowLeftRight, CircleDot,
+  AlignJustify,
 } from "lucide-react";
 import Link from "next/link";
 import { getInitials } from "@/lib/utils";
@@ -193,13 +195,13 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
         {/* Row 1: top action bar */}
         <div className="flex items-center justify-between px-4 py-2 border-b border-[#DFE1E6] dark:border-slate-700 bg-white dark:bg-[#1B2A3B] h-12">
 
-          {/* Left: back + breadcrumb */}
+          {/* Left: collapse + doc icon + title */}
           <div className="flex items-center gap-1 min-w-0">
             <button
               onClick={() => router.push(`/spaces/${page.space_id}`)}
               className="h-7 w-7 flex items-center justify-center rounded hover:bg-[#EBECF0] dark:hover:bg-slate-700 transition-colors shrink-0"
             >
-              <ChevronLeft className="h-4 w-4 text-[#42526E] dark:text-slate-300" />
+              <ChevronDown className="h-4 w-4 text-[#42526E] dark:text-slate-300" />
             </button>
             {/* Doc type icon */}
             <svg viewBox="0 0 16 16" className="h-4 w-4 shrink-0 text-[#42526E] dark:text-slate-400" fill="none">
@@ -207,7 +209,6 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
               <line x1="4.5" y1="5" x2="9.5" y2="5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
               <line x1="4.5" y1="7.5" x2="9.5" y2="7.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
               <line x1="4.5" y1="10" x2="7.5" y2="10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-              <polygon points="10.5,10 14,12 10.5,14" fill="currentColor" opacity="0.8" />
             </svg>
             <span className="text-sm font-medium text-[#172B4D] dark:text-slate-200 truncate max-w-[200px] ml-1">
               {title || "Untitled"}
@@ -308,6 +309,39 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
 
       {/* ── Page content ── */}
       <div className="flex-1 max-w-4xl mx-auto w-full px-8 md:px-16 py-10">
+
+        {/* Page meta action bar — above title */}
+        <div className="flex items-center gap-0.5 mb-5 -ml-1">
+          <button className="flex items-center gap-1.5 px-2 py-1 rounded text-xs text-[#6B778C] dark:text-slate-400 hover:bg-[#F4F5F7] dark:hover:bg-slate-700 transition-colors">
+            <AlignJustify className="h-3.5 w-3.5" />
+            <ChevronDown className="h-3 w-3" />
+          </button>
+          <div className="w-px h-4 bg-[#DFE1E6] dark:bg-slate-600 mx-1" />
+          <button className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs text-[#42526E] dark:text-slate-300 hover:bg-[#F4F5F7] dark:hover:bg-slate-700 transition-colors">
+            <Smile className="h-3.5 w-3.5" />
+            <span>Emoji</span>
+          </button>
+          <button className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs text-[#42526E] dark:text-slate-300 hover:bg-[#F4F5F7] dark:hover:bg-slate-700 transition-colors">
+            <CircleDot className="h-3.5 w-3.5" />
+            <span>Status</span>
+          </button>
+          <button className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs text-[#42526E] dark:text-slate-300 hover:bg-[#F4F5F7] dark:hover:bg-slate-700 transition-colors bg-[#EBECF0] dark:bg-slate-700 font-medium">
+            <ImageIcon className="h-3.5 w-3.5" />
+            <span>Header image</span>
+          </button>
+          <button className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs text-[#42526E] dark:text-slate-300 hover:bg-[#F4F5F7] dark:hover:bg-slate-700 transition-colors">
+            <Sparkles className="h-3.5 w-3.5" />
+            <span>Suggest title</span>
+          </button>
+          <div className="w-px h-4 bg-[#DFE1E6] dark:bg-slate-600 mx-1" />
+          <button className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs text-[#42526E] dark:text-slate-300 hover:bg-[#F4F5F7] dark:hover:bg-slate-700 transition-colors">
+            <ALargeSmall className="h-3.5 w-3.5" />
+          </button>
+          <button className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs text-[#42526E] dark:text-slate-300 hover:bg-[#F4F5F7] dark:hover:bg-slate-700 transition-colors">
+            <ArrowLeftRight className="h-3.5 w-3.5" />
+            <ChevronDown className="h-3 w-3" />
+          </button>
+        </div>
 
         {/* Title */}
         <input
