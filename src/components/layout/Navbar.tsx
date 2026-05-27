@@ -14,7 +14,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import SearchModal from "@/components/search/SearchModal";
 import CreateSpaceModal from "@/components/spaces/CreateSpaceModal";
-import { Moon, Sun, Search, LogOut, Settings, User as UserIcon, Plus, HelpCircle, FileText, LayoutTemplate, Globe, PenLine, Database, Link2, ChevronRight, ChevronDown } from "lucide-react";
+import { Moon, Sun, Search, LogOut, Settings, User as UserIcon, Plus, HelpCircle, FileText, LayoutTemplate, Globe, PenLine, Database, Link2, ChevronRight, ChevronDown, Users } from "lucide-react";
 import NotificationDropdown from "@/components/layout/NotificationDropdown";
 import { useTheme } from "next-themes";
 import { getInitials } from "@/lib/utils";
@@ -235,6 +235,9 @@ export default function Navbar({ user, onToggleSidebar }: NavbarProps) {
               </div>
               <DropdownMenuItem onClick={() => router.push("/profile")}>
                 <UserIcon className="h-4 w-4 mr-2" /> Profile
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push("/teams")}>
+                <Users className="h-4 w-4 mr-2" /> Teams
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => router.push("/settings")}>
                 <Settings className="h-4 w-4 mr-2" /> Settings

@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import CreatePageButton from "@/components/pages/CreatePageButton";
 import { formatRelativeTime, getInitials } from "@/lib/utils";
-import { FileText, Users, Star, UserPlus, Trash2 } from "lucide-react";
+import { FileText, Users, Star, UserPlus, Trash2, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 
 interface Space {
@@ -52,6 +52,7 @@ export default function SpaceTabs({ space, pages, members: initialMembers, curre
   const [isStarred, setIsStarred] = useState(false);
   const [members, setMembers] = useState<Member[]>(initialMembers);
   const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState("editor");
   const [inviting, setInviting] = useState(false);
   const [showInviteForm, setShowInviteForm] = useState(false);
 
@@ -98,7 +99,7 @@ export default function SpaceTabs({ space, pages, members: initialMembers, curre
     const resp = await fetch(`/api/spaces/${space.id}/members`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: inviteEmail.trim(), role: "member" }),
+      body: JSON.stringify({ email: inviteEmail.trim(), role: inviteRole }),
     });
     if (resp.ok) {
       toast.success(`Invited ${inviteEmail}`);
@@ -125,6 +126,23 @@ export default function SpaceTabs({ space, pages, members: initialMembers, curre
       setMembers((prev) => prev.filter((m) => m.profiles?.id !== userId));
     } else {
       toast.error("Failed to remove member");
+    }
+  }
+
+  async function handleChangeRole(userId: string, role: string) {
+    const resp = await fetch(`/api/spaces/${space.id}/members`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId, role }),
+    });
+    if (resp.ok) {
+      setMembers((prev) => prev.map((m) => {
+        const p = (m.profiles as unknown) as { id: string } | null;
+        return p?.id === userId ? { ...m, role } : m;
+      }));
+      toast.success("Role updated");
+    } else {
+      toast.error("Failed to update role");
     }
   }
 
@@ -301,14 +319,26 @@ export default function SpaceTabs({ space, pages, members: initialMembers, curre
               </div>
 
               {showInviteForm && (
-                <div className="bg-[#F4F5F7] dark:bg-slate-700/30 rounded-lg p-4 mb-4 flex items-center gap-2">
+                <div className="bg-[#F4F5F7] dark:bg-slate-700/30 rounded-lg p-4 mb-4 flex items-center gap-2 flex-wrap">
                   <input
                     value={inviteEmail}
                     onChange={(e) => setInviteEmail(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleInvite()}
                     placeholder="Enter email address"
-                    className="flex-1 px-3 py-2 text-sm border border-[#DFE1E6] dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-[#172B4D] dark:text-slate-200 focus:outline-none focus:border-[#0052CC]"
+                    className="flex-1 min-w-48 px-3 py-2 text-sm border border-[#DFE1E6] dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-[#172B4D] dark:text-slate-200 focus:outline-none focus:border-[#0052CC]"
                   />
+                  <div className="relative">
+                    <select
+                      value={inviteRole}
+                      onChange={(e) => setInviteRole(e.target.value)}
+                      className="px-3 py-2 text-sm border border-[#DFE1E6] dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-[#172B4D] dark:text-slate-200 focus:outline-none focus:border-[#0052CC] appearance-none pr-7 cursor-pointer"
+                    >
+                      <option value="admin">Admin</option>
+                      <option value="editor">Editor</option>
+                      <option value="viewer">Viewer</option>
+                    </select>
+                    <ChevronDown className="h-3.5 w-3.5 absolute right-2 top-1/2 -translate-y-1/2 text-[#6B778C] pointer-events-none" />
+                  </div>
                   <button
                     onClick={handleInvite}
                     disabled={inviting || !inviteEmail.trim()}
@@ -348,12 +378,32 @@ export default function SpaceTabs({ space, pages, members: initialMembers, curre
                         </p>
                         <p className="text-xs text-[#6B778C] dark:text-slate-400 truncate">{profile.email}</p>
                       </div>
-                      <Badge
-                        variant={m.role === "owner" ? "default" : "secondary"}
-                        className="text-xs capitalize shrink-0"
-                      >
-                        {m.role}
-                      </Badge>
+                      {m.role === "owner" ? (
+                        <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 shrink-0">
+                          Owner
+                        </span>
+                      ) : currentUserId === space.owner_id ? (
+                        <div className="relative shrink-0">
+                          <select
+                            value={m.role}
+                            onChange={(e) => handleChangeRole(profile.id, e.target.value)}
+                            className="text-xs px-2 py-1 border border-[#DFE1E6] dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-[#172B4D] dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-[#0052CC] appearance-none pr-6 cursor-pointer"
+                          >
+                            <option value="admin">Admin</option>
+                            <option value="editor">Editor</option>
+                            <option value="viewer">Viewer</option>
+                          </select>
+                          <ChevronDown className="h-3 w-3 absolute right-1.5 top-1/2 -translate-y-1/2 text-[#6B778C] pointer-events-none" />
+                        </div>
+                      ) : (
+                        <span className={`px-2 py-0.5 text-xs font-semibold rounded-full shrink-0 ${
+                          m.role === "admin" ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400" :
+                          m.role === "editor" ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400" :
+                          "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                        }`}>
+                          {m.role === "editor" ? "Editor" : m.role === "admin" ? "Admin" : "Viewer"}
+                        </span>
+                      )}
                       {currentUserId === space.owner_id && m.role !== "owner" && (
                         <button
                           onClick={() => handleRemoveMember(profile.id)}

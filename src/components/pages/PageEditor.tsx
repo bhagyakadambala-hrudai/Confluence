@@ -16,6 +16,7 @@ import {
   Sparkles, ALargeSmall, ArrowLeftRight, CircleDot,
   AlignJustify,
 } from "lucide-react";
+import ShareModal from "@/components/pages/ShareModal";
 import Link from "next/link";
 import { getInitials } from "@/lib/utils";
 import {
@@ -102,6 +103,7 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [editor, setEditor] = useState<EditorType | null>(null);
+  const [showShareModal, setShowShareModal] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSaved = useRef({ title: page.title, content: page.content || "" });
 
@@ -164,7 +166,7 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
     });
   }
 
-  async function handleShare() {
+  async function handleCopyLink() {
     try {
       await navigator.clipboard.writeText(window.location.href);
       toast.success("Link copied!");
@@ -187,6 +189,7 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
   }
 
   return (
+    <>
     <div className="flex flex-col h-screen overflow-hidden bg-white dark:bg-[#1B2A3B]">
 
       {/* ── Sticky header: top bar + toolbar ── */}
@@ -252,7 +255,7 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
 
             {/* Share */}
             <button
-              onClick={handleShare}
+              onClick={() => setShowShareModal(true)}
               className="flex items-center gap-1.5 px-2.5 h-8 text-sm text-[#42526E] dark:text-slate-300 border border-[#DFE1E6] dark:border-slate-600 rounded hover:bg-[#EBECF0] dark:hover:bg-slate-700 transition-colors"
             >
               <Lock className="h-3 w-3" />
@@ -261,7 +264,7 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
 
             {/* Link icon */}
             <button
-              onClick={handleShare}
+              onClick={handleCopyLink}
               className="h-8 w-8 flex items-center justify-center text-[#42526E] dark:text-slate-300 hover:bg-[#EBECF0] dark:hover:bg-slate-700 rounded transition-colors"
             >
               <LinkIcon className="h-3.5 w-3.5" />
@@ -417,5 +420,15 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
       </div>
       </div>
     </div>
+
+    {showShareModal && (
+      <ShareModal
+        pageId={page.id}
+        spaceId={page.space_id}
+        pageTitle={title || "Untitled"}
+        onClose={() => setShowShareModal(false)}
+      />
+    )}
+    </>
   );
 }

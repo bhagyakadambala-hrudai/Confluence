@@ -11,7 +11,7 @@ import {
   ChevronRight, Plus, MoreHorizontal, Search,
   LayoutGrid, BookOpen, Clock, Star, Globe, Layers,
   Building2, Users, MoreHorizontal as More,
-  PanelLeftClose, FileText, ExternalLink, X, Filter,
+  PanelLeftClose, FileText, ExternalLink, X, Filter, Lock,
 } from "lucide-react";
 import { cn, getInitials, formatRelativeTime } from "@/lib/utils";
 
@@ -26,6 +26,7 @@ interface Page {
   title: string;
   emoji: string;
   parent_id: string | null;
+  access_mode?: string;
 }
 
 interface SidebarProps {
@@ -593,7 +594,12 @@ function PageItem({ page, allPages, spaceId, activePageId, depth }: {
           className="flex items-center gap-1.5 flex-1 min-w-0 py-0.5 pr-2"
         >
           <FileText className={cn("h-3.5 w-3.5 shrink-0", isActive ? "text-[#0052CC]" : "text-[#6B778C]")} />
-          <span className="truncate text-xs">{page.title || "Untitled"}</span>
+          <span className="truncate text-xs flex-1">{page.title || "Untitled"}</span>
+          {page.access_mode === "restricted" && (
+            <span title="Restricted access" className="shrink-0">
+              <Lock className="h-3 w-3 text-amber-500" />
+            </span>
+          )}
         </Link>
       </div>
 

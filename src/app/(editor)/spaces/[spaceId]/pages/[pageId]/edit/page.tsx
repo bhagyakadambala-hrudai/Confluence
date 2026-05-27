@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getPageAccess } from "@/lib/permissions";
 import PageEditor from "@/components/pages/PageEditor";
 
 export default async function PageEditView({
@@ -22,6 +23,9 @@ export default async function PageEditView({
     .single();
 
   if (!page) notFound();
+
+  const access = await getPageAccess(admin, pageId, user.id, spaceId);
+  if (!access.canEdit) redirect(`/spaces/${spaceId}/pages/${pageId}`);
 
   const [
     { data: space },

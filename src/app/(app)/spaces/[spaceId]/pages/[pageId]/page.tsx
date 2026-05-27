@@ -1,6 +1,7 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getPageAccess } from "@/lib/permissions";
 import PageView from "@/components/pages/PageView";
 
 export default async function PageViewRoute({
@@ -23,6 +24,9 @@ export default async function PageViewRoute({
 
   if (!page) notFound();
 
+  const access = await getPageAccess(admin, pageId, user.id, spaceId);
+  if (!access.canView) redirect(`/spaces/${spaceId}`);
+
   const [
     { data: space },
     { data: profile },
@@ -44,6 +48,7 @@ export default async function PageViewRoute({
       parentPage={parentPageResult.data}
       labels={labels || []}
       currentUserId={user.id}
+      canEdit={access.canEdit}
     />
   );
 }
