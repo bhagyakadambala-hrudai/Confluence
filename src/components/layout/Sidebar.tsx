@@ -8,12 +8,22 @@ import { createClient } from "@/lib/supabase/client";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import CreateSpaceModal from "@/components/spaces/CreateSpaceModal";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   ChevronRight, Plus, MoreHorizontal, Search,
   LayoutGrid, BookOpen, Clock, Star, Globe, Layers,
   Building2, Users, MoreHorizontal as More,
   PanelLeftClose, FileText, ExternalLink, X, Filter, Lock,
+  Settings, Trash2, Archive, Link2, Copy, Move, Pencil,
+  Eye, UserCog, BarChart2, Zap, Folder, AlignLeft,
 } from "lucide-react";
 import { cn, getInitials, formatRelativeTime } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface Space {
   id: string;
@@ -45,6 +55,9 @@ export default function Sidebar({ open, onToggle, user }: SidebarProps) {
   const [pages, setPages] = useState<Page[]>([]);
   const [pageSearch, setPageSearch] = useState("");
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [showCreatePopup, setShowCreatePopup] = useState(false);
+  const [spaceStarred, setSpaceStarred] = useState(false);
+  const createPopupRef = useRef<HTMLDivElement>(null);
 
   type FlyoutPanel = "recent" | "starred" | "spaces" | null;
   const [flyout, setFlyout] = useState<FlyoutPanel>(null);
@@ -95,10 +108,23 @@ export default function Sidebar({ open, onToggle, user }: SidebarProps) {
       if (flyout && flyoutRef.current && !flyoutRef.current.contains(e.target as Node)) {
         setFlyout(null);
       }
+      if (showCreatePopup && createPopupRef.current && !createPopupRef.current.contains(e.target as Node)) {
+        setShowCreatePopup(false);
+      }
     }
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
-  }, [flyout]);
+  }, [flyout, showCreatePopup]);
+
+  // Fetch space star status when active space changes
+  useEffect(() => {
+    if (!activeSpace) return;
+    fetch("/api/stars")
+      .then((r) => r.ok ? r.json() : { spaces: [] })
+      .then((data) => {
+        setSpaceStarred((data.spaces || []).some((s: { id: string }) => s.id === activeSpace.id));
+      });
+  }, [activeSpace?.id]);
 
   // Fetch recent pages when recent flyout opens
   useEffect(() => {
@@ -129,17 +155,42 @@ export default function Sidebar({ open, onToggle, user }: SidebarProps) {
     setPages(Array.isArray(data) ? data : []);
   }
 
-  async function createPage() {
+  async function createPage(parentId?: string) {
     if (!activeSpaceId) return;
     const resp = await fetch("/api/pages", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ space_id: activeSpaceId, title: "Untitled", content: "", emoji: "📄" }),
+      body: JSON.stringify({ space_id: activeSpaceId, parent_id: parentId || null, title: "Untitled", content: "", emoji: "📄" }),
     });
     if (resp.ok) {
       const page = await resp.json();
       fetchPages(activeSpaceId);
       router.push(`/spaces/${activeSpaceId}/pages/${page.id}/edit`);
+    }
+  }
+
+  async function handleStarSpace() {
+    if (!activeSpace) return;
+    const resp = await fetch("/api/stars", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "space", id: activeSpace.id }),
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      setSpaceStarred(data.starred);
+      toast.success(data.starred ? "Space starred" : "Star removed");
+    }
+  }
+
+  async function handleDeleteSpace() {
+    if (!activeSpace) return;
+    const resp = await fetch(`/api/spaces/${activeSpace.id}`, { method: "DELETE" });
+    if (resp.ok) {
+      toast.success("Space deleted");
+      router.push("/");
+    } else {
+      toast.error("Failed to delete space");
     }
   }
 
@@ -195,28 +246,75 @@ export default function Sidebar({ open, onToggle, user }: SidebarProps) {
           {activeSpace ? (
             <div className="py-1">
               {/* Space header row */}
-              <div className="flex items-center gap-2 px-3 py-2">
-                {avatarUrl ? (
-                  <img src={avatarUrl} alt={fullName} className="h-7 w-7 rounded-full object-cover" />
-                ) : (
-                  <div className="h-7 w-7 rounded-full bg-[#0052CC] flex items-center justify-center shrink-0">
-                    <span className="text-white text-xs font-bold">{initials.charAt(0)}</span>
-                  </div>
-                )}
+              <div className="flex items-center gap-2 px-3 py-2 group/space">
+                <div className="h-7 w-7 rounded-md flex items-center justify-center shrink-0 text-base leading-none">
+                  {activeSpace.emoji || "📁"}
+                </div>
                 <Link href={`/spaces/${activeSpace.id}`}
                   className="flex-1 min-w-0 font-semibold text-sm text-[#172B4D] dark:text-white truncate hover:text-[#0052CC]">
                   {activeSpace.name}
                 </Link>
-                <button className="h-6 w-6 flex items-center justify-center rounded hover:bg-[#F1F2F4] dark:hover:bg-[#21262d]">
-                  <MoreHorizontal className="h-3.5 w-3.5 text-[#6B778C]" />
-                </button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="h-6 w-6 flex items-center justify-center rounded hover:bg-[#E8EAED] dark:hover:bg-[#21262d] opacity-0 group-hover/space:opacity-100 transition-opacity">
+                      <MoreHorizontal className="h-3.5 w-3.5 text-[#6B778C]" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" side="right" className="w-52">
+                    <DropdownMenuItem onClick={handleStarSpace} className="flex items-center gap-2 cursor-pointer">
+                      <Star className={`h-4 w-4 ${spaceStarred ? "fill-yellow-400 text-yellow-400" : ""}`} />
+                      {spaceStarred ? "Unstar space" : "Star space"}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="flex items-center gap-2 cursor-pointer" onClick={() => router.push(`/spaces/${activeSpace.id}`)}>
+                      <Eye className="h-4 w-4" />
+                      Watch space
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <div className="px-2 py-1">
+                      <p className="text-[10px] font-semibold text-[#97A0AF] uppercase tracking-wide">Space tools</p>
+                    </div>
+                    <DropdownMenuItem className="flex items-center gap-2 cursor-pointer" onClick={() => router.push(`/spaces/${activeSpace.id}?tab=members`)}>
+                      <UserCog className="h-4 w-4" />
+                      Users
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="flex items-center gap-2 cursor-pointer text-[#97A0AF]">
+                      <Zap className="h-4 w-4" />
+                      Automation
+                      <span className="ml-auto text-[10px] bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 px-1.5 py-0.5 rounded font-semibold">PREMIUM</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="flex items-center gap-2 cursor-pointer text-[#97A0AF]">
+                      <AlignLeft className="h-4 w-4" />
+                      Content manager
+                      <span className="ml-auto text-[10px] bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 px-1.5 py-0.5 rounded font-semibold">PREMIUM</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="flex items-center gap-2 cursor-pointer text-[#97A0AF]">
+                      <BarChart2 className="h-4 w-4" />
+                      Analytics
+                      <span className="ml-auto text-[10px] bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 px-1.5 py-0.5 rounded font-semibold">PREMIUM</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem className="flex items-center gap-2 cursor-pointer" onClick={() => router.push(`/spaces/${activeSpace.id}`)}>
+                      <Settings className="h-4 w-4" />
+                      Space settings
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="flex items-center gap-2 cursor-pointer text-[#97A0AF]">
+                      <Archive className="h-4 w-4" />
+                      Archive space
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleDeleteSpace} className="flex items-center gap-2 cursor-pointer text-red-600 focus:text-red-600">
+                      <Trash2 className="h-4 w-4" />
+                      Delete space
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
 
               {/* Content header */}
               <div className="flex items-center justify-between px-3 py-1">
                 <span className="text-xs font-semibold text-[#6B778C] dark:text-slate-400 uppercase tracking-wider">Content</span>
                 <div className="flex items-center gap-0.5">
-                  <button onClick={createPage}
+                  <button onClick={() => createPage()}
                     className="h-6 w-6 flex items-center justify-center rounded hover:bg-[#F1F2F4] dark:hover:bg-[#21262d] transition-colors">
                     <Plus className="h-3.5 w-3.5 text-[#6B778C]" />
                   </button>
@@ -249,18 +347,51 @@ export default function Sidebar({ open, onToggle, user }: SidebarProps) {
                     spaceId={activeSpace.id}
                     activePageId={activePageId}
                     depth={0}
+                    onRefresh={() => fetchPages(activeSpace.id)}
+                    onCreateChild={(parentId) => createPage(parentId)}
                   />
                 ))}
               </div>
 
-              {/* + Create */}
-              <button
-                onClick={createPage}
-                className="flex items-center gap-2 w-full px-4 py-2 text-sm text-[#172B4D] dark:text-slate-300 hover:bg-[#F1F2F4] dark:hover:bg-[#21262d] transition-colors mt-1"
-              >
-                <Plus className="h-4 w-4 text-[#6B778C]" />
-                Create
-              </button>
+              {/* + Create popup */}
+              <div className="relative mt-1" ref={createPopupRef}>
+                <button
+                  onClick={() => setShowCreatePopup((v) => !v)}
+                  className="flex items-center gap-2 w-full px-4 py-2 text-sm text-[#172B4D] dark:text-slate-300 hover:bg-[#F1F2F4] dark:hover:bg-[#21262d] transition-colors"
+                >
+                  <Plus className="h-4 w-4 text-[#6B778C]" />
+                  Create
+                </button>
+                {showCreatePopup && (
+                  <div className="absolute left-3 bottom-full mb-1 w-56 bg-white dark:bg-[#1B2A3B] rounded-xl border border-[#DFE1E6] dark:border-slate-700 shadow-xl z-50 py-1 overflow-hidden">
+                    <CreateMenuItem
+                      icon={<FileText className="h-4 w-4 text-[#0052CC]" />}
+                      label="Page"
+                      description="A blank canvas"
+                      onClick={() => { setShowCreatePopup(false); createPage(); }}
+                    />
+                    <CreateMenuItem
+                      icon={<span className="text-base leading-none">📋</span>}
+                      label="Start from template"
+                      description="Use an existing layout"
+                      onClick={() => { setShowCreatePopup(false); router.push("/templates"); }}
+                    />
+                    <div className="h-px bg-[#F4F5F7] dark:bg-slate-700 my-1" />
+                    <CreateMenuItem
+                      icon={<Folder className="h-4 w-4 text-amber-500" />}
+                      label="Folder"
+                      description="Organise your content"
+                      onClick={() => { setShowCreatePopup(false); toast("Folders coming soon"); }}
+                    />
+                    <CreateMenuItem
+                      icon={<AlignLeft className="h-4 w-4 text-green-500" />}
+                      label="Live Doc"
+                      description="Real-time document"
+                      onClick={() => { setShowCreatePopup(false); toast("Live Docs coming soon"); }}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           ) : (
             /* No active space — show all spaces */
@@ -295,7 +426,7 @@ export default function Sidebar({ open, onToggle, user }: SidebarProps) {
           {/* ── Bottom links ── */}
           <nav className="py-1">
             <BottomLink icon={<Building2 className="h-4 w-4" />} label="Company hub" />
-            <BottomLink icon={<Users className="h-4 w-4" />} label="Teams" />
+            <NavItem icon={<Users className="h-4 w-4" />} label="Teams" href="/teams" active={pathname === "/teams"} />
             <BottomLink icon={<More className="h-4 w-4" />} label="More" />
           </nav>
         </ScrollArea>
@@ -561,25 +692,69 @@ function BottomLink({ icon, label }: { icon: React.ReactNode; label: string }) {
   );
 }
 
-function PageItem({ page, allPages, spaceId, activePageId, depth }: {
+function CreateMenuItem({ icon, label, description, onClick }: {
+  icon: React.ReactNode; label: string; description: string; onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full flex items-center gap-3 px-3 py-2 hover:bg-[#F4F5F7] dark:hover:bg-slate-700 transition-colors text-left"
+    >
+      <span className="shrink-0">{icon}</span>
+      <div>
+        <p className="text-sm font-medium text-[#172B4D] dark:text-slate-200">{label}</p>
+        <p className="text-xs text-[#6B778C] dark:text-slate-400">{description}</p>
+      </div>
+    </button>
+  );
+}
+
+function PageItem({ page, allPages, spaceId, activePageId, depth, onRefresh, onCreateChild }: {
   page: Page; allPages: Page[]; spaceId: string;
   activePageId?: string; depth: number;
+  onRefresh?: () => void;
+  onCreateChild?: (parentId: string) => void;
 }) {
+  const router = useRouter();
   const children = allPages.filter((p) => p.parent_id === page.id);
   const [expanded, setExpanded] = useState(false);
   const isActive = activePageId === page.id;
+  const [renaming, setRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState(page.title || "Untitled");
+
+  async function handleRename() {
+    if (!renameValue.trim() || renameValue === page.title) { setRenaming(false); return; }
+    const resp = await fetch(`/api/pages/${page.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: renameValue.trim() }),
+    });
+    if (resp.ok) { onRefresh?.(); toast.success("Renamed"); }
+    setRenaming(false);
+  }
+
+  async function handleDelete() {
+    const resp = await fetch(`/api/pages/${page.id}`, { method: "DELETE" });
+    if (resp.ok) { onRefresh?.(); toast.success("Deleted"); router.push(`/spaces/${spaceId}`); }
+    else toast.error("Failed to delete");
+  }
+
+  async function handleCopyLink() {
+    await navigator.clipboard.writeText(`${window.location.origin}/spaces/${spaceId}/pages/${page.id}`);
+    toast.success("Link copied");
+  }
 
   return (
     <div>
       <div className={cn(
-        "flex items-center gap-1 py-1 rounded text-sm group transition-colors",
+        "flex items-center gap-1 py-1 rounded text-sm group/item transition-colors",
         isActive
           ? "bg-[#E9F0FB] dark:bg-blue-900/30 text-[#0052CC] dark:text-blue-300 font-medium"
           : "text-[#172B4D] dark:text-slate-300 hover:bg-[#F1F2F4] dark:hover:bg-[#21262d]"
       )}
         style={{ paddingLeft: `${(depth * 16) + 8}px` }}
       >
-        {/* bullet dot */}
+        {/* chevron / bullet */}
         <span className="h-4 w-4 flex items-center justify-center shrink-0">
           {children.length > 0 ? (
             <button onClick={() => setExpanded(!expanded)} className="h-4 w-4 flex items-center justify-center">
@@ -589,18 +764,73 @@ function PageItem({ page, allPages, spaceId, activePageId, depth }: {
             <span className="h-1.5 w-1.5 rounded-full bg-[#C1C7D0] dark:bg-slate-500 mx-auto" />
           )}
         </span>
-        <Link
-          href={`/spaces/${spaceId}/pages/${page.id}`}
-          className="flex items-center gap-1.5 flex-1 min-w-0 py-0.5 pr-2"
-        >
-          <FileText className={cn("h-3.5 w-3.5 shrink-0", isActive ? "text-[#0052CC]" : "text-[#6B778C]")} />
-          <span className="truncate text-xs flex-1">{page.title || "Untitled"}</span>
-          {page.access_mode === "restricted" && (
-            <span title="Restricted access" className="shrink-0">
-              <Lock className="h-3 w-3 text-amber-500" />
-            </span>
-          )}
-        </Link>
+
+        {renaming ? (
+          <input
+            autoFocus
+            value={renameValue}
+            onChange={(e) => setRenameValue(e.target.value)}
+            onBlur={handleRename}
+            onKeyDown={(e) => { if (e.key === "Enter") handleRename(); if (e.key === "Escape") setRenaming(false); }}
+            className="flex-1 min-w-0 text-xs px-1 py-0.5 rounded border border-[#0052CC] bg-white dark:bg-slate-800 text-[#172B4D] dark:text-slate-200 outline-none"
+          />
+        ) : (
+          <Link
+            href={`/spaces/${spaceId}/pages/${page.id}`}
+            className="flex items-center gap-1.5 flex-1 min-w-0 py-0.5"
+          >
+            <span className="text-sm leading-none shrink-0">{page.emoji || "📄"}</span>
+            <span className="truncate text-xs flex-1">{page.title || "Untitled"}</span>
+            {page.access_mode === "restricted" && (
+              <span className="shrink-0">
+                <Lock className="h-3 w-3 text-amber-500" />
+              </span>
+            )}
+          </Link>
+        )}
+
+        {/* Hover action buttons */}
+        {!renaming && (
+          <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover/item:opacity-100 transition-opacity pr-1">
+            {/* + child page */}
+            <button
+              onClick={() => onCreateChild?.(page.id)}
+              className="h-5 w-5 flex items-center justify-center rounded hover:bg-[#DFE1E6] dark:hover:bg-slate-600 transition-colors"
+              title="Add child page"
+            >
+              <Plus className="h-3 w-3 text-[#6B778C]" />
+            </button>
+            {/* ... context menu */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="h-5 w-5 flex items-center justify-center rounded hover:bg-[#DFE1E6] dark:hover:bg-slate-600 transition-colors">
+                  <MoreHorizontal className="h-3 w-3 text-[#6B778C]" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" side="right" className="w-48">
+                <DropdownMenuItem onClick={() => setRenaming(true)} className="flex items-center gap-2 cursor-pointer">
+                  <Pencil className="h-4 w-4" /> Rename
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleCopyLink} className="flex items-center gap-2 cursor-pointer">
+                  <Link2 className="h-4 w-4" /> Copy link
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push(`/spaces/${spaceId}/pages/${page.id}`)} className="flex items-center gap-2 cursor-pointer text-[#97A0AF]">
+                  <Copy className="h-4 w-4" /> Make a copy
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push(`/spaces/${spaceId}/pages/${page.id}`)} className="flex items-center gap-2 cursor-pointer">
+                  <Move className="h-4 w-4" /> Move
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="flex items-center gap-2 cursor-pointer text-[#97A0AF]">
+                  <Archive className="h-4 w-4" /> Archive
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleDelete} className="flex items-center gap-2 cursor-pointer text-red-600 focus:text-red-600">
+                  <Trash2 className="h-4 w-4" /> Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
       </div>
 
       {expanded && children.length > 0 && (
@@ -613,6 +843,8 @@ function PageItem({ page, allPages, spaceId, activePageId, depth }: {
               spaceId={spaceId}
               activePageId={activePageId}
               depth={depth + 1}
+              onRefresh={onRefresh}
+              onCreateChild={onCreateChild}
             />
           ))}
         </div>
