@@ -13,12 +13,27 @@ export async function GET(
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const admin = createAdminClient();
-  const { data } = await admin
+  const { data: rows } = await admin
     .from("team_members")
-    .select("id, role, user_id, profiles(id, full_name, avatar_url, email)")
+    .select("id, role, user_id")
     .eq("team_id", teamId);
 
-  return NextResponse.json(data || []);
+  if (!rows || rows.length === 0) return NextResponse.json([]);
+
+  const userIds = rows.map((r: { user_id: string }) => r.user_id);
+  const { data: profiles } = await admin
+    .from("profiles")
+    .select("id, full_name, avatar_url, email")
+    .in("id", userIds);
+
+  const profileMap = Object.fromEntries((profiles || []).map((p: { id: string }) => [p.id, p]));
+
+  const members = rows.map((r: { id: string; role: string; user_id: string }) => ({
+    ...r,
+    profiles: profileMap[r.user_id] ?? null,
+  }));
+
+  return NextResponse.json(members);
 }
 
 export async function POST(

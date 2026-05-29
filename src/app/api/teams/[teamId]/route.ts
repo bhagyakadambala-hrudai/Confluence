@@ -15,12 +15,31 @@ export async function GET(
   const { data: team } = await admin.from("teams").select("*").eq("id", teamId).single();
   if (!team) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const { data: members } = await admin
+  // Fetch team_members rows
+  const { data: memberRows } = await admin
     .from("team_members")
-    .select("id, role, user_id, profiles(id, full_name, avatar_url, email)")
+    .select("id, role, user_id")
     .eq("team_id", teamId);
 
-  return NextResponse.json({ ...team, members: members || [] });
+  // Fetch profiles for all members + owner in one query
+  const userIds = [
+    team.owner_id,
+    ...((memberRows || []).map((m: { user_id: string }) => m.user_id)),
+  ].filter(Boolean);
+
+  const { data: profiles } = await admin
+    .from("profiles")
+    .select("id, full_name, avatar_url, email")
+    .in("id", userIds);
+
+  const profileMap = Object.fromEntries((profiles || []).map((p: { id: string }) => [p.id, p]));
+
+  const members = (memberRows || []).map((m: { id: string; role: string; user_id: string }) => ({
+    ...m,
+    profiles: profileMap[m.user_id] ?? null,
+  }));
+
+  return NextResponse.json({ ...team, members, ownerProfile: profileMap[team.owner_id] ?? null });
 }
 
 export async function PATCH(

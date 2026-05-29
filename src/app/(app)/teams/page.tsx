@@ -34,6 +34,7 @@ interface TeamMember {
 
 interface TeamDetail extends Team {
   members: TeamMember[];
+  ownerProfile: { id: string; full_name: string; avatar_url: string; email: string } | null;
 }
 
 const TEAM_GRADIENTS = [
@@ -572,27 +573,26 @@ function TeamDetailModal({ team, onClose }: { team: TeamDetail; onClose: () => v
               <div className="space-y-1">
                 {/* Owner row */}
                 <MemberRow
-                  name="Team Owner"
+                  name={team.ownerProfile?.full_name || team.ownerProfile?.email || "Team Owner"}
+                  email={team.ownerProfile?.email}
+                  avatar={team.ownerProfile?.avatar_url}
                   role="owner"
                   badge="Owner"
                   badgeColor="purple"
                 />
-                {members.map((m) => {
-                  if (!m.profiles) return null;
-                  return (
-                    <MemberRow
-                      key={m.id}
-                      name={m.profiles.full_name || m.profiles.email}
-                      email={m.profiles.email}
-                      avatar={m.profiles.avatar_url}
-                      role={m.role}
-                      badge={m.role === "admin" ? "Admin" : "Member"}
-                      badgeColor={m.role === "admin" ? "blue" : "gray"}
-                      canRemove={team.my_role === "owner"}
-                      onRemove={() => handleRemoveMember(m.user_id)}
-                    />
-                  );
-                })}
+                {members.map((m) => (
+                  <MemberRow
+                    key={m.id}
+                    name={m.profiles?.full_name || m.profiles?.email || "Unknown"}
+                    email={m.profiles?.email}
+                    avatar={m.profiles?.avatar_url}
+                    role={m.role}
+                    badge={m.role === "admin" ? "Admin" : "Member"}
+                    badgeColor={m.role === "admin" ? "blue" : "gray"}
+                    canRemove={team.my_role === "owner"}
+                    onRemove={() => handleRemoveMember(m.user_id)}
+                  />
+                ))}
               </div>
             </div>
           )}
