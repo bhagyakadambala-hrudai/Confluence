@@ -263,8 +263,13 @@ function CreateTeamModal({ onClose, onCreated }: { onClose: () => void; onCreate
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: name.trim(), description: description.trim() }),
     });
-    if (resp.ok) { toast.success("Team created"); onCreated(); }
-    else toast.error("Failed to create team");
+    if (resp.ok) {
+      toast.success("Team created");
+      onCreated();
+    } else {
+      const err = await resp.json().catch(() => ({}));
+      toast.error(err.error || "Failed to create team");
+    }
     setCreating(false);
   }
 

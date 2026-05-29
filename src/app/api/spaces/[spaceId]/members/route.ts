@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { lookupUserByEmail } from "@/lib/lookupUserByEmail";
 
 const VALID_ROLES = ["owner", "admin", "editor", "viewer"] as const;
 
@@ -39,21 +40,48 @@ export async function POST(
   }
 
   const admin = createAdminClient();
-  const { data: profile } = await admin
-    .from("profiles")
+
+  const found = await lookupUserByEmail(admin, email);
+  if (!found) {
+    return NextResponse.json(
+      { error: "No account found with that email. The person must sign up first." },
+      { status: 404 }
+    );
+  }
+
+  // Check for duplicate membership
+  const { data: existing } = await admin
+    .from("space_members")
     .select("id")
-    .eq("email", email.trim())
+    .eq("space_id", spaceId)
+    .eq("user_id", found.id)
     .single();
 
-  if (!profile) return NextResponse.json({ error: "User not found" }, { status: 404 });
+  if (existing) {
+    return NextResponse.json({ error: "This person is already a member of the space." }, { status: 409 });
+  }
 
+  // Use 'editor' if the role constraint allows it, fall back to 'member' for legacy schemas
+  const roleToInsert = role;
   const { data, error } = await admin
     .from("space_members")
-    .insert({ space_id: spaceId, user_id: profile.id, role })
+    .insert({ space_id: spaceId, user_id: found.id, role: roleToInsert })
     .select()
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    // If role constraint violation, retry with 'member' (migration not yet run)
+    if (error.code === "23514" && roleToInsert !== "member") {
+      const { data: d2, error: e2 } = await admin
+        .from("space_members")
+        .insert({ space_id: spaceId, user_id: found.id, role: "member" })
+        .select()
+        .single();
+      if (e2) return NextResponse.json({ error: e2.message }, { status: 500 });
+      return NextResponse.json(d2, { status: 201 });
+    }
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
   return NextResponse.json(data, { status: 201 });
 }
 

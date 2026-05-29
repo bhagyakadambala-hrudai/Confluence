@@ -75,6 +75,11 @@ export async function POST(request: Request) {
     .select()
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    const msg = error.code === "42P01"
+      ? "Teams table not found. Please run supabase-permissions.sql in your Supabase SQL Editor first."
+      : error.message;
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
   return NextResponse.json(data, { status: 201 });
 }

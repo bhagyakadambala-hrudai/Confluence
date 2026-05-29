@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { lookupUserByEmail } from "@/lib/lookupUserByEmail";
 
 export async function GET(
   _req: Request,
@@ -39,17 +40,29 @@ export async function POST(
   const { email, role = "member" } = await request.json();
   if (!email) return NextResponse.json({ error: "Email is required" }, { status: 400 });
 
-  const { data: profile } = await admin
-    .from("profiles")
+  const found = await lookupUserByEmail(admin, email);
+  if (!found) {
+    return NextResponse.json(
+      { error: "No account found with that email. The person must sign up first." },
+      { status: 404 }
+    );
+  }
+
+  // Prevent duplicate
+  const { data: existing } = await admin
+    .from("team_members")
     .select("id")
-    .eq("email", email.trim())
+    .eq("team_id", teamId)
+    .eq("user_id", found.id)
     .single();
 
-  if (!profile) return NextResponse.json({ error: "User not found" }, { status: 404 });
+  if (existing) {
+    return NextResponse.json({ error: "This person is already a member of this team." }, { status: 409 });
+  }
 
   const { data, error } = await admin
     .from("team_members")
-    .insert({ team_id: teamId, user_id: profile.id, role })
+    .insert({ team_id: teamId, user_id: found.id, role })
     .select()
     .single();
 
