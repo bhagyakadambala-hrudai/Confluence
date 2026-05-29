@@ -253,24 +253,68 @@ function TeamCard({ team, onOpen, onDelete }: { team: Team; onOpen: () => void; 
 function CreateTeamModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [emailInput, setEmailInput] = useState("");
+  const [emails, setEmails] = useState<string[]>([]);
   const [creating, setCreating] = useState(false);
+
+  function addEmail() {
+    const val = emailInput.trim().toLowerCase();
+    if (!val || !val.includes("@") || emails.includes(val)) return;
+    setEmails((prev) => [...prev, val]);
+    setEmailInput("");
+  }
+
+  function removeEmail(email: string) {
+    setEmails((prev) => prev.filter((e) => e !== email));
+  }
 
   async function handleCreate() {
     if (!name.trim()) return;
     setCreating(true);
+
     const resp = await fetch("/api/teams", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: name.trim(), description: description.trim() }),
     });
-    if (resp.ok) {
-      toast.success("Team created");
-      onCreated();
-    } else {
+
+    if (!resp.ok) {
       const err = await resp.json().catch(() => ({}));
       toast.error(err.error || "Failed to create team");
+      setCreating(false);
+      return;
     }
+
+    const team = await resp.json();
+
+    // Invite added emails
+    const results = await Promise.allSettled(
+      emails.map((email) =>
+        fetch(`/api/teams/${team.id}/members`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, role: "member" }),
+        }).then(async (r) => {
+          if (!r.ok) {
+            const e = await r.json().catch(() => ({}));
+            throw new Error(`${email}: ${e.error || "failed"}`);
+          }
+        })
+      )
+    );
+
+    const failed = results
+      .filter((r): r is PromiseRejectedResult => r.status === "rejected")
+      .map((r) => r.reason?.message);
+
+    if (failed.length > 0) {
+      toast.warning(`Team created. Could not invite: ${failed.join(", ")}`);
+    } else {
+      toast.success("Team created" + (emails.length > 0 ? ` and ${emails.length} member${emails.length > 1 ? "s" : ""} invited` : ""));
+    }
+
     setCreating(false);
+    onCreated();
   }
 
   return (
@@ -282,6 +326,7 @@ function CreateTeamModal({ onClose, onCreated }: { onClose: () => void; onCreate
             <X className="h-4 w-4" />
           </button>
         </div>
+
         <div className="px-6 py-5 space-y-4">
           {/* Preview avatar */}
           <div className="flex justify-center">
@@ -289,6 +334,8 @@ function CreateTeamModal({ onClose, onCreated }: { onClose: () => void; onCreate
               <span className="text-white font-bold text-xl">{(name || "T").slice(0, 2).toUpperCase()}</span>
             </div>
           </div>
+
+          {/* Team name */}
           <div>
             <label className="block text-xs font-semibold text-[#172B4D] dark:text-slate-200 mb-1.5">Team name *</label>
             <input
@@ -300,17 +347,61 @@ function CreateTeamModal({ onClose, onCreated }: { onClose: () => void; onCreate
               className="w-full px-3 py-2 text-sm border border-[#DFE1E6] dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-[#172B4D] dark:text-slate-200 placeholder-[#97A0AF] focus:outline-none focus:ring-2 focus:ring-[#0052CC] focus:border-transparent"
             />
           </div>
+
+          {/* Description */}
           <div>
             <label className="block text-xs font-semibold text-[#172B4D] dark:text-slate-200 mb-1.5">Description</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="What does this team do?"
-              rows={3}
+              rows={2}
               className="w-full px-3 py-2 text-sm border border-[#DFE1E6] dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-[#172B4D] dark:text-slate-200 placeholder-[#97A0AF] focus:outline-none focus:ring-2 focus:ring-[#0052CC] focus:border-transparent resize-none"
             />
           </div>
+
+          {/* Add people */}
+          <div>
+            <label className="block text-xs font-semibold text-[#172B4D] dark:text-slate-200 mb-1.5">Add people</label>
+            <div className="flex gap-2">
+              <div className="flex-1 flex items-center gap-2 px-3 h-9 rounded-lg border border-[#DFE1E6] dark:border-slate-600 bg-white dark:bg-slate-800 focus-within:ring-2 focus-within:ring-[#0052CC] focus-within:border-transparent transition-all">
+                <Mail className="h-3.5 w-3.5 text-[#6B778C] shrink-0" />
+                <input
+                  value={emailInput}
+                  onChange={(e) => setEmailInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addEmail(); } }}
+                  placeholder="Enter email address"
+                  className="bg-transparent outline-none text-sm text-[#172B4D] dark:text-slate-200 placeholder-[#97A0AF] w-full"
+                />
+              </div>
+              <button
+                onClick={addEmail}
+                disabled={!emailInput.trim() || !emailInput.includes("@")}
+                className="px-3 h-9 text-sm font-medium text-white bg-[#0052CC] hover:bg-[#0065FF] rounded-lg transition-colors disabled:opacity-40"
+              >
+                Add
+              </button>
+            </div>
+
+            {/* Email chips */}
+            {emails.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {emails.map((email) => (
+                  <span
+                    key={email}
+                    className="flex items-center gap-1.5 px-2.5 py-1 bg-[#DEEBFF] dark:bg-blue-900/30 text-[#0052CC] dark:text-blue-400 text-xs font-medium rounded-full"
+                  >
+                    {email}
+                    <button onClick={() => removeEmail(email)} className="hover:text-[#0747A6] transition-colors">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
+
         <div className="flex justify-end gap-2 px-6 py-4 border-t border-[#F4F5F7] dark:border-slate-700">
           <button onClick={onClose} className="px-4 py-2 text-sm text-[#42526E] dark:text-slate-300 hover:bg-[#F4F5F7] dark:hover:bg-slate-700 rounded-lg transition-colors">Cancel</button>
           <button
