@@ -4,7 +4,15 @@ import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Users, Plus, X, Trash2, UserPlus, Crown, ChevronDown,
+  Search, Settings, MoreHorizontal, Mail, ExternalLink,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { getInitials } from "@/lib/utils";
 
@@ -28,18 +36,29 @@ interface TeamDetail extends Team {
   members: TeamMember[];
 }
 
+const TEAM_GRADIENTS = [
+  "from-blue-500 to-indigo-600",
+  "from-purple-500 to-pink-600",
+  "from-green-500 to-teal-600",
+  "from-orange-500 to-red-600",
+  "from-cyan-500 to-blue-600",
+  "from-fuchsia-500 to-purple-600",
+];
+
+function getGradient(name: string) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return TEAM_GRADIENTS[Math.abs(hash) % TEAM_GRADIENTS.length];
+}
+
 export default function TeamsPage() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState<TeamDetail | null>(null);
-  const [newTeamName, setNewTeamName] = useState("");
-  const [newTeamDesc, setNewTeamDesc] = useState("");
-  const [creating, setCreating] = useState(false);
 
-  useEffect(() => {
-    loadTeams();
-  }, []);
+  useEffect(() => { loadTeams(); }, []);
 
   async function loadTeams() {
     setLoading(true);
@@ -48,40 +67,35 @@ export default function TeamsPage() {
     setLoading(false);
   }
 
-  async function handleCreateTeam() {
-    if (!newTeamName.trim()) return;
-    setCreating(true);
-    const resp = await fetch("/api/teams", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: newTeamName.trim(), description: newTeamDesc.trim() }),
-    });
-    if (resp.ok) {
-      toast.success("Team created");
-      setNewTeamName("");
-      setNewTeamDesc("");
-      setShowCreateModal(false);
-      loadTeams();
-    } else {
-      toast.error("Failed to create team");
-    }
-    setCreating(false);
-  }
-
   async function openTeam(team: Team) {
     const resp = await fetch(`/api/teams/${team.id}`);
     if (resp.ok) setSelectedTeam(await resp.json());
   }
 
+  async function handleDelete(teamId: string) {
+    const resp = await fetch(`/api/teams/${teamId}`, { method: "DELETE" });
+    if (resp.ok) {
+      toast.success("Team deleted");
+      setTeams((prev) => prev.filter((t) => t.id !== teamId));
+    } else {
+      toast.error("Failed to delete team");
+    }
+  }
+
+  const filtered = teams.filter((t) =>
+    !search || t.name.toLowerCase().includes(search.toLowerCase())
+  );
+
   return (
-    <div className="min-h-screen bg-[#F4F5F7] dark:bg-[#0D1929]">
+    <div className="min-h-screen bg-white dark:bg-[#1B2A3B]">
       <div className="max-w-5xl mx-auto px-8 py-8">
+
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-[#172B4D] dark:text-white">Teams</h1>
             <p className="text-sm text-[#6B778C] dark:text-slate-400 mt-0.5">
-              Manage teams and collaborate with colleagues
+              Collaborate with your colleagues
             </p>
           </div>
           <button
@@ -93,14 +107,27 @@ export default function TeamsPage() {
           </button>
         </div>
 
+        {/* Search */}
+        <div className="flex items-center gap-2 px-3 h-10 rounded-lg border border-[#DFE1E6] dark:border-slate-600 bg-white dark:bg-slate-800 w-72 mb-6 focus-within:border-[#0052CC] focus-within:ring-1 focus-within:ring-[#0052CC] transition-colors">
+          <Search className="h-4 w-4 text-[#6B778C] shrink-0" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search teams"
+            className="bg-transparent outline-none text-sm text-[#172B4D] dark:text-slate-200 placeholder-[#97A0AF] w-full"
+          />
+        </div>
+
         {/* Teams grid */}
         {loading ? (
-          <div className="text-sm text-[#6B778C] dark:text-slate-400">Loading teams...</div>
-        ) : teams.length === 0 ? (
-          <div className="bg-white dark:bg-[#1B2A3B] rounded-xl border border-[#DFE1E6] dark:border-slate-700 p-12 text-center">
-            <Users className="h-12 w-12 text-[#C1C7D0] dark:text-slate-500 mx-auto mb-4" />
+          <div className="text-sm text-[#6B778C] text-center py-16">Loading teams…</div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-16">
+            <div className="h-16 w-16 rounded-2xl bg-[#F4F5F7] dark:bg-slate-700 flex items-center justify-center mx-auto mb-4">
+              <Users className="h-8 w-8 text-[#C1C7D0] dark:text-slate-500" />
+            </div>
             <h3 className="text-base font-semibold text-[#172B4D] dark:text-white mb-1">No teams yet</h3>
-            <p className="text-sm text-[#6B778C] dark:text-slate-400 mb-4">
+            <p className="text-sm text-[#6B778C] dark:text-slate-400 mb-4 max-w-xs mx-auto">
               Create a team to collaborate with colleagues on spaces and pages
             </p>
             <button
@@ -108,100 +135,45 @@ export default function TeamsPage() {
               className="flex items-center gap-2 px-4 py-2 bg-[#0052CC] hover:bg-[#0065FF] text-white text-sm font-semibold rounded-lg transition-colors mx-auto"
             >
               <Plus className="h-4 w-4" />
-              Create team
+              Create your first team
             </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {teams.map((team) => (
-              <button
+            {filtered.map((team) => (
+              <TeamCard
                 key={team.id}
-                onClick={() => openTeam(team)}
-                className="bg-white dark:bg-[#1B2A3B] rounded-xl border border-[#DFE1E6] dark:border-slate-700 p-5 text-left hover:shadow-md hover:border-[#0052CC] dark:hover:border-blue-500 transition-all group"
-              >
-                <div className="flex items-start gap-3 mb-3">
-                  <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center shrink-0">
-                    <span className="text-white font-bold text-sm">
-                      {team.name.slice(0, 2).toUpperCase()}
-                    </span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-semibold text-[#172B4D] dark:text-white truncate group-hover:text-[#0052CC]">
-                      {team.name}
-                    </h3>
-                    {team.description && (
-                      <p className="text-xs text-[#6B778C] dark:text-slate-400 truncate mt-0.5">
-                        {team.description}
-                      </p>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-[#6B778C] dark:text-slate-400">
-                    {team.member_count} {team.member_count === 1 ? "member" : "members"}
-                  </span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                    team.my_role === "owner" ? "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400" :
-                    team.my_role === "admin" ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400" :
-                    "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
-                  }`}>
-                    {team.my_role === "owner" ? "Owner" : team.my_role === "admin" ? "Admin" : "Member"}
-                  </span>
-                </div>
-              </button>
+                team={team}
+                onOpen={() => openTeam(team)}
+                onDelete={() => handleDelete(team.id)}
+              />
             ))}
+
+            {/* Create new team card */}
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-[#DFE1E6] dark:border-slate-600 p-6 hover:border-[#0052CC] hover:bg-[#F4F5F7]/50 dark:hover:bg-slate-700/20 transition-all group min-h-[160px]"
+            >
+              <div className="h-10 w-10 rounded-full bg-[#F4F5F7] dark:bg-slate-700 flex items-center justify-center mb-2 group-hover:bg-[#DEEBFF] dark:group-hover:bg-blue-900/30 transition-colors">
+                <Plus className="h-5 w-5 text-[#6B778C] group-hover:text-[#0052CC] transition-colors" />
+              </div>
+              <p className="text-sm font-medium text-[#6B778C] dark:text-slate-400 group-hover:text-[#0052CC] transition-colors">
+                Create a team
+              </p>
+            </button>
           </div>
         )}
       </div>
 
-      {/* Create team modal */}
+      {/* Create modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white dark:bg-[#1B2A3B] rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[#DFE1E6] dark:border-slate-700">
-              <h2 className="text-base font-semibold text-[#172B4D] dark:text-white">Create team</h2>
-              <button onClick={() => setShowCreateModal(false)} className="h-8 w-8 flex items-center justify-center text-[#6B778C] hover:text-[#172B4D] dark:hover:text-white hover:bg-[#F4F5F7] dark:hover:bg-slate-700 rounded">
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="px-6 py-4 space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-[#172B4D] dark:text-slate-200 mb-1.5">Team name *</label>
-                <input
-                  autoFocus
-                  value={newTeamName}
-                  onChange={(e) => setNewTeamName(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleCreateTeam()}
-                  placeholder="e.g. Engineering, Marketing..."
-                  className="w-full px-3 py-2 text-sm border border-[#DFE1E6] dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-[#172B4D] dark:text-slate-200 placeholder-[#97A0AF] focus:outline-none focus:ring-2 focus:ring-[#0052CC] focus:border-transparent"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-[#172B4D] dark:text-slate-200 mb-1.5">Description</label>
-                <textarea
-                  value={newTeamDesc}
-                  onChange={(e) => setNewTeamDesc(e.target.value)}
-                  placeholder="What does this team do?"
-                  rows={3}
-                  className="w-full px-3 py-2 text-sm border border-[#DFE1E6] dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-[#172B4D] dark:text-slate-200 placeholder-[#97A0AF] focus:outline-none focus:ring-2 focus:ring-[#0052CC] focus:border-transparent resize-none"
-                />
-              </div>
-            </div>
-            <div className="flex justify-end gap-2 px-6 py-4 border-t border-[#F4F5F7] dark:border-slate-700">
-              <button onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-sm text-[#42526E] dark:text-slate-300 hover:bg-[#F4F5F7] dark:hover:bg-slate-700 rounded-lg transition-colors">Cancel</button>
-              <button
-                onClick={handleCreateTeam}
-                disabled={creating || !newTeamName.trim()}
-                className="px-4 py-2 text-sm font-semibold text-white bg-[#0052CC] hover:bg-[#0065FF] rounded-lg transition-colors disabled:opacity-50"
-              >
-                {creating ? "Creating..." : "Create team"}
-              </button>
-            </div>
-          </div>
-        </div>
+        <CreateTeamModal
+          onClose={() => setShowCreateModal(false)}
+          onCreated={() => { setShowCreateModal(false); loadTeams(); }}
+        />
       )}
 
-      {/* Team detail modal */}
+      {/* Team detail */}
       {selectedTeam && (
         <TeamDetailModal
           team={selectedTeam}
@@ -212,12 +184,152 @@ export default function TeamsPage() {
   );
 }
 
+/* ── Team Card ── */
+function TeamCard({ team, onOpen, onDelete }: { team: Team; onOpen: () => void; onDelete: () => void }) {
+  const gradient = getGradient(team.name);
+  const initials = team.name.slice(0, 2).toUpperCase();
+
+  return (
+    <div className="group bg-white dark:bg-[#1e2d3d] rounded-xl border border-[#DFE1E6] dark:border-slate-700 overflow-hidden hover:shadow-lg hover:border-transparent transition-all">
+      {/* Banner */}
+      <div className={`h-14 bg-gradient-to-r ${gradient} relative`}>
+        <div className="absolute bottom-0 right-3 translate-y-1/2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                onClick={(e) => e.stopPropagation()}
+                className="h-7 w-7 flex items-center justify-center rounded-full bg-white dark:bg-slate-800 border border-[#DFE1E6] dark:border-slate-600 text-[#6B778C] hover:text-[#172B4D] dark:hover:text-white opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
+              >
+                <MoreHorizontal className="h-3.5 w-3.5" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-40">
+              <DropdownMenuItem onClick={onOpen} className="flex items-center gap-2 cursor-pointer">
+                <Settings className="h-4 w-4" /> Manage team
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={onDelete} className="flex items-center gap-2 cursor-pointer text-red-600 focus:text-red-600">
+                <Trash2 className="h-4 w-4" /> Delete team
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+
+      {/* Content */}
+      <button onClick={onOpen} className="w-full text-left px-4 pt-5 pb-4">
+        {/* Avatar overlapping banner */}
+        <div className={`h-12 w-12 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center -mt-10 mb-2 ring-2 ring-white dark:ring-slate-800 shadow-md`}>
+          <span className="text-white font-bold text-sm">{initials}</span>
+        </div>
+
+        <h3 className="text-sm font-semibold text-[#172B4D] dark:text-white truncate group-hover:text-[#0052CC] transition-colors">
+          {team.name}
+        </h3>
+        {team.description && (
+          <p className="text-xs text-[#6B778C] dark:text-slate-400 mt-0.5 line-clamp-2">
+            {team.description}
+          </p>
+        )}
+
+        <div className="flex items-center justify-between mt-3">
+          <span className="text-xs text-[#6B778C] dark:text-slate-400">
+            {team.member_count} {team.member_count === 1 ? "member" : "members"}
+          </span>
+          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+            team.my_role === "owner" ? "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400" :
+            team.my_role === "admin" ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400" :
+            "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400"
+          }`}>
+            {team.my_role === "owner" ? "Owner" : team.my_role === "admin" ? "Admin" : "Member"}
+          </span>
+        </div>
+      </button>
+    </div>
+  );
+}
+
+/* ── Create Team Modal ── */
+function CreateTeamModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [creating, setCreating] = useState(false);
+
+  async function handleCreate() {
+    if (!name.trim()) return;
+    setCreating(true);
+    const resp = await fetch("/api/teams", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: name.trim(), description: description.trim() }),
+    });
+    if (resp.ok) { toast.success("Team created"); onCreated(); }
+    else toast.error("Failed to create team");
+    setCreating(false);
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="bg-white dark:bg-[#1B2A3B] rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#DFE1E6] dark:border-slate-700">
+          <h2 className="text-base font-semibold text-[#172B4D] dark:text-white">Create a team</h2>
+          <button onClick={onClose} className="h-8 w-8 flex items-center justify-center text-[#6B778C] hover:text-[#172B4D] dark:hover:text-white hover:bg-[#F4F5F7] dark:hover:bg-slate-700 rounded-lg transition-colors">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="px-6 py-5 space-y-4">
+          {/* Preview avatar */}
+          <div className="flex justify-center">
+            <div className={`h-16 w-16 rounded-2xl bg-gradient-to-br ${getGradient(name || "T")} flex items-center justify-center shadow-lg`}>
+              <span className="text-white font-bold text-xl">{(name || "T").slice(0, 2).toUpperCase()}</span>
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-[#172B4D] dark:text-slate-200 mb-1.5">Team name *</label>
+            <input
+              autoFocus
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleCreate()}
+              placeholder="e.g. Engineering, Marketing..."
+              className="w-full px-3 py-2 text-sm border border-[#DFE1E6] dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-[#172B4D] dark:text-slate-200 placeholder-[#97A0AF] focus:outline-none focus:ring-2 focus:ring-[#0052CC] focus:border-transparent"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-[#172B4D] dark:text-slate-200 mb-1.5">Description</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="What does this team do?"
+              rows={3}
+              className="w-full px-3 py-2 text-sm border border-[#DFE1E6] dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-[#172B4D] dark:text-slate-200 placeholder-[#97A0AF] focus:outline-none focus:ring-2 focus:ring-[#0052CC] focus:border-transparent resize-none"
+            />
+          </div>
+        </div>
+        <div className="flex justify-end gap-2 px-6 py-4 border-t border-[#F4F5F7] dark:border-slate-700">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-[#42526E] dark:text-slate-300 hover:bg-[#F4F5F7] dark:hover:bg-slate-700 rounded-lg transition-colors">Cancel</button>
+          <button
+            onClick={handleCreate}
+            disabled={creating || !name.trim()}
+            className="px-4 py-2 text-sm font-semibold text-white bg-[#0052CC] hover:bg-[#0065FF] rounded-lg transition-colors disabled:opacity-50"
+          >
+            {creating ? "Creating…" : "Create team"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Team Detail Modal ── */
 function TeamDetailModal({ team, onClose }: { team: TeamDetail; onClose: () => void }) {
   const [members, setMembers] = useState<TeamMember[]>(team.members || []);
+  const [activeTab, setActiveTab] = useState<"members" | "settings">("members");
   const [addEmail, setAddEmail] = useState("");
   const [addRole, setAddRole] = useState("member");
   const [adding, setAdding] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const gradient = getGradient(team.name);
 
   async function handleAddMember() {
     if (!addEmail.trim()) return;
@@ -253,138 +365,215 @@ function TeamDetailModal({ team, onClose }: { team: TeamDetail; onClose: () => v
 
   async function handleDeleteTeam() {
     const resp = await fetch(`/api/teams/${team.id}`, { method: "DELETE" });
-    if (resp.ok) {
-      toast.success("Team deleted");
-      onClose();
-    } else {
-      toast.error("Failed to delete team");
-    }
+    if (resp.ok) { toast.success("Team deleted"); onClose(); }
+    else toast.error("Failed to delete team");
   }
 
+  const totalCount = members.length + 1;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white dark:bg-[#1B2A3B] rounded-xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden max-h-[90vh] flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#DFE1E6] dark:border-slate-700">
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center shrink-0">
-              <span className="text-white font-bold text-xs">{team.name.slice(0, 2).toUpperCase()}</span>
-            </div>
-            <div>
-              <h2 className="text-base font-semibold text-[#172B4D] dark:text-white">{team.name}</h2>
-              {team.description && <p className="text-xs text-[#6B778C] dark:text-slate-400">{team.description}</p>}
-            </div>
-          </div>
-          <button onClick={onClose} className="h-8 w-8 flex items-center justify-center text-[#6B778C] hover:text-[#172B4D] dark:hover:text-white hover:bg-[#F4F5F7] dark:hover:bg-slate-700 rounded transition-colors">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+      <div className="bg-white dark:bg-[#1B2A3B] rounded-2xl shadow-2xl w-full max-w-xl mx-4 overflow-hidden max-h-[88vh] flex flex-col">
+
+        {/* Banner + avatar */}
+        <div className={`h-24 bg-gradient-to-r ${gradient} relative shrink-0`}>
+          <button
+            onClick={onClose}
+            className="absolute top-3 right-3 h-8 w-8 flex items-center justify-center bg-black/20 hover:bg-black/30 text-white rounded-full transition-colors"
+          >
             <X className="h-4 w-4" />
           </button>
         </div>
 
-        {/* Add member form */}
-        {team.my_role === "owner" && (
-          <div className="px-6 py-3 border-b border-[#F4F5F7] dark:border-slate-700 flex gap-2">
-            <input
-              value={addEmail}
-              onChange={(e) => setAddEmail(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleAddMember()}
-              placeholder="Add member by email..."
-              className="flex-1 px-3 py-1.5 text-sm border border-[#DFE1E6] dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-[#172B4D] dark:text-slate-200 placeholder-[#97A0AF] focus:outline-none focus:ring-2 focus:ring-[#0052CC] focus:border-transparent"
-            />
-            <div className="relative">
-              <select
-                value={addRole}
-                onChange={(e) => setAddRole(e.target.value)}
-                className="text-sm px-3 py-1.5 border border-[#DFE1E6] dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-[#172B4D] dark:text-slate-200 focus:outline-none appearance-none pr-7 cursor-pointer"
-              >
-                <option value="admin">Admin</option>
-                <option value="member">Member</option>
-              </select>
-              <ChevronDown className="h-3.5 w-3.5 absolute right-2 top-1/2 -translate-y-1/2 text-[#6B778C] pointer-events-none" />
+        {/* Team info */}
+        <div className="px-6 pb-4 shrink-0">
+          <div className="flex items-end gap-4 -mt-8 mb-3">
+            <div className={`h-16 w-16 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center ring-4 ring-white dark:ring-[#1B2A3B] shadow-lg shrink-0`}>
+              <span className="text-white font-bold text-xl">{team.name.slice(0, 2).toUpperCase()}</span>
             </div>
-            <button
-              onClick={handleAddMember}
-              disabled={adding || !addEmail.trim()}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-[#0052CC] hover:bg-[#0065FF] rounded-lg transition-colors disabled:opacity-50"
-            >
-              <UserPlus className="h-3.5 w-3.5" />
-              Add
-            </button>
+            <div className="pb-1 flex-1 min-w-0">
+              <h2 className="text-xl font-bold text-[#172B4D] dark:text-white truncate">{team.name}</h2>
+              {team.description && (
+                <p className="text-sm text-[#6B778C] dark:text-slate-400 mt-0.5 truncate">{team.description}</p>
+              )}
+            </div>
           </div>
-        )}
 
-        {/* Members list */}
-        <div className="flex-1 overflow-y-auto px-6 py-3">
-          <p className="text-xs font-semibold text-[#6B778C] dark:text-slate-400 mb-2 uppercase tracking-wide">
-            Members ({members.length + 1})
-          </p>
-          <ul className="space-y-1">
-            {/* Owner row */}
-            <li className="flex items-center gap-3 py-2">
-              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center shrink-0">
-                <Crown className="h-4 w-4 text-white" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-[#172B4D] dark:text-slate-200">Owner</div>
-              </div>
-              <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 shrink-0">
-                Owner
-              </span>
-            </li>
-            {members.map((m) => {
-              const profile = m.profiles;
-              if (!profile) return null;
-              return (
-                <li key={m.id} className="flex items-center gap-3 py-2">
-                  <Avatar className="h-8 w-8 shrink-0">
-                    <AvatarImage src={profile.avatar_url} />
-                    <AvatarFallback className="text-[10px] bg-[#0052CC] text-white">
-                      {getInitials(profile.full_name || profile.email)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-[#172B4D] dark:text-slate-200 truncate">{profile.full_name || profile.email}</div>
-                    <div className="text-xs text-[#6B778C] dark:text-slate-400 truncate">{profile.email}</div>
-                  </div>
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ${
-                    m.role === "admin" ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400" :
-                    "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
-                  }`}>
-                    {m.role === "admin" ? "Admin" : "Member"}
-                  </span>
-                  {team.my_role === "owner" && (
-                    <button
-                      onClick={() => handleRemoveMember(m.user_id)}
-                      className="h-7 w-7 flex items-center justify-center text-[#97A0AF] hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors shrink-0"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
+          {/* Stats row */}
+          <div className="flex items-center gap-4 text-sm text-[#6B778C] dark:text-slate-400">
+            <span className="flex items-center gap-1.5">
+              <Users className="h-4 w-4" />
+              {totalCount} {totalCount === 1 ? "member" : "members"}
+            </span>
+            <span className={`px-2 py-0.5 text-xs rounded-full font-medium ${
+              team.my_role === "owner" ? "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400" :
+              "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
+            }`}>
+              {team.my_role === "owner" ? "Owner" : "Member"}
+            </span>
+          </div>
         </div>
 
-        {/* Danger zone */}
-        {team.my_role === "owner" && (
-          <div className="px-6 py-4 border-t border-[#F4F5F7] dark:border-slate-700">
-            {!deleteConfirm ? (
+        {/* Tabs */}
+        <div className="border-b border-[#DFE1E6] dark:border-slate-700 px-6 shrink-0">
+          <div className="flex gap-0">
+            {(["members", "settings"] as const).filter(t => t === "members" || team.my_role === "owner").map((tab) => (
               <button
-                onClick={() => setDeleteConfirm(true)}
-                className="text-sm text-red-500 hover:text-red-600 font-medium"
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-4 py-2.5 text-sm font-medium capitalize transition-colors border-b-2 -mb-px ${
+                  activeTab === tab
+                    ? "border-[#0052CC] text-[#0052CC]"
+                    : "border-transparent text-[#42526E] dark:text-slate-400 hover:text-[#172B4D] dark:hover:text-white"
+                }`}
               >
-                Delete team
+                {tab}
               </button>
-            ) : (
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-red-600 font-medium">Delete "{team.name}"?</span>
-                <button onClick={handleDeleteTeam} className="text-sm text-white bg-red-500 hover:bg-red-600 px-3 py-1 rounded font-medium">Confirm</button>
-                <button onClick={() => setDeleteConfirm(false)} className="text-sm text-[#42526E] dark:text-slate-300 px-3 py-1 rounded hover:bg-[#F4F5F7] dark:hover:bg-slate-700">Cancel</button>
-              </div>
-            )}
+            ))}
           </div>
-        )}
+        </div>
+
+        {/* Tab content */}
+        <div className="flex-1 overflow-y-auto">
+          {activeTab === "members" && (
+            <div className="px-6 py-4">
+              {/* Add member (owner only) */}
+              {team.my_role === "owner" && (
+                <div className="flex gap-2 mb-4">
+                  <div className="flex items-center gap-2 flex-1 px-3 h-9 rounded-lg border border-[#DFE1E6] dark:border-slate-600 bg-white dark:bg-slate-800 focus-within:border-[#0052CC] focus-within:ring-1 focus-within:ring-[#0052CC] transition-colors">
+                    <Mail className="h-3.5 w-3.5 text-[#6B778C] shrink-0" />
+                    <input
+                      value={addEmail}
+                      onChange={(e) => setAddEmail(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleAddMember()}
+                      placeholder="Invite by email address"
+                      className="bg-transparent outline-none text-sm text-[#172B4D] dark:text-slate-200 placeholder-[#97A0AF] w-full"
+                    />
+                  </div>
+                  <div className="relative">
+                    <select
+                      value={addRole}
+                      onChange={(e) => setAddRole(e.target.value)}
+                      className="h-9 px-3 text-sm border border-[#DFE1E6] dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-[#172B4D] dark:text-slate-200 focus:outline-none appearance-none pr-7 cursor-pointer"
+                    >
+                      <option value="admin">Admin</option>
+                      <option value="member">Member</option>
+                    </select>
+                    <ChevronDown className="h-3.5 w-3.5 absolute right-2 top-1/2 -translate-y-1/2 text-[#6B778C] pointer-events-none" />
+                  </div>
+                  <button
+                    onClick={handleAddMember}
+                    disabled={adding || !addEmail.trim()}
+                    className="flex items-center gap-1.5 px-3 h-9 text-sm font-semibold text-white bg-[#0052CC] hover:bg-[#0065FF] rounded-lg transition-colors disabled:opacity-50 shrink-0"
+                  >
+                    <UserPlus className="h-3.5 w-3.5" />
+                    Invite
+                  </button>
+                </div>
+              )}
+
+              {/* Members list */}
+              <div className="space-y-1">
+                {/* Owner row */}
+                <MemberRow
+                  name="Team Owner"
+                  role="owner"
+                  badge="Owner"
+                  badgeColor="purple"
+                />
+                {members.map((m) => {
+                  if (!m.profiles) return null;
+                  return (
+                    <MemberRow
+                      key={m.id}
+                      name={m.profiles.full_name || m.profiles.email}
+                      email={m.profiles.email}
+                      avatar={m.profiles.avatar_url}
+                      role={m.role}
+                      badge={m.role === "admin" ? "Admin" : "Member"}
+                      badgeColor={m.role === "admin" ? "blue" : "gray"}
+                      canRemove={team.my_role === "owner"}
+                      onRemove={() => handleRemoveMember(m.user_id)}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {activeTab === "settings" && team.my_role === "owner" && (
+            <div className="px-6 py-4 space-y-6">
+              <div>
+                <h3 className="text-sm font-semibold text-[#172B4D] dark:text-white mb-1">Team details</h3>
+                <p className="text-xs text-[#6B778C] dark:text-slate-400">Update your team's name and description</p>
+              </div>
+              <div className="border-t border-[#F4F5F7] dark:border-slate-700 pt-4">
+                <h3 className="text-sm font-semibold text-red-600 mb-1">Danger zone</h3>
+                <p className="text-xs text-[#6B778C] dark:text-slate-400 mb-3">
+                  Deleting a team is permanent and cannot be undone.
+                </p>
+                {!deleteConfirm ? (
+                  <button
+                    onClick={() => setDeleteConfirm(true)}
+                    className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-red-600 border border-red-200 dark:border-red-800 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                  >
+                    <Trash2 className="h-4 w-4" /> Delete this team
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-red-600 font-medium">Are you sure?</span>
+                    <button onClick={handleDeleteTeam} className="px-3 py-1.5 text-sm text-white bg-red-500 hover:bg-red-600 rounded-lg font-semibold">Delete</button>
+                    <button onClick={() => setDeleteConfirm(false)} className="px-3 py-1.5 text-sm text-[#42526E] dark:text-slate-300 hover:bg-[#F4F5F7] dark:hover:bg-slate-700 rounded-lg">Cancel</button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
+    </div>
+  );
+}
+
+/* ── Member Row ── */
+function MemberRow({
+  name, email, avatar, role, badge, badgeColor, canRemove, onRemove,
+}: {
+  name: string; email?: string; avatar?: string;
+  role: string; badge: string; badgeColor: "purple" | "blue" | "gray";
+  canRemove?: boolean; onRemove?: () => void;
+}) {
+  const badgeClass = {
+    purple: "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400",
+    blue: "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400",
+    gray: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400",
+  }[badgeColor];
+
+  return (
+    <div className="flex items-center gap-3 py-2 px-2 rounded-lg hover:bg-[#F4F5F7] dark:hover:bg-slate-700/30 group transition-colors">
+      <Avatar className="h-9 w-9 shrink-0">
+        <AvatarImage src={avatar} />
+        <AvatarFallback className={`text-[10px] font-bold text-white ${
+          badgeColor === "purple" ? "bg-purple-500" : badgeColor === "blue" ? "bg-blue-500" : "bg-[#0052CC]"
+        }`}>
+          {getInitials(name)}
+        </AvatarFallback>
+      </Avatar>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-[#172B4D] dark:text-slate-200 truncate">{name}</p>
+        {email && <p className="text-xs text-[#6B778C] dark:text-slate-400 truncate">{email}</p>}
+      </div>
+      <span className={`text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ${badgeClass}`}>
+        {badge}
+      </span>
+      {canRemove && onRemove && (
+        <button
+          onClick={onRemove}
+          className="h-7 w-7 flex items-center justify-center text-[#97A0AF] hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      )}
     </div>
   );
 }

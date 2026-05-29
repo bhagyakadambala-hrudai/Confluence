@@ -234,10 +234,53 @@ export default function Sidebar({ open, onToggle, user }: SidebarProps) {
               expanded={flyout === "recent"} onToggle={() => toggleFlyout("recent")} active={flyout === "recent"} />
             <NavItem icon={<Star className="h-4 w-4" />} label="Starred" href="#" hasChevron
               expanded={flyout === "starred"} onToggle={() => toggleFlyout("starred")} active={flyout === "starred"} />
-            <NavItem icon={<Globe className="h-4 w-4" />} label="Spaces" href="#" hasChevron
-              expanded={flyout === "spaces"} onToggle={() => toggleFlyout("spaces")} active={flyout === "spaces"} />
+            <NavItem icon={<Globe className="h-4 w-4" />} label="Spaces" href="/spaces"
+              hasChevron expanded={flyout === "spaces"} onToggle={() => toggleFlyout("spaces")}
+              active={flyout === "spaces" || pathname === "/spaces"} />
             <NavItem icon={<Layers className="h-4 w-4" />} label="Apps" href="#" />
           </nav>
+
+          {/* ── Spaces inline expansion ── */}
+          {flyout === "spaces" && (
+            <div className="pb-2">
+              <div className="px-4 pt-2 pb-1">
+                <p className="text-xs font-semibold text-[#6B778C] dark:text-slate-400 uppercase tracking-wide mb-2">
+                  Starred spaces
+                </p>
+                {starredSpaces.length === 0 ? (
+                  <p className="text-xs text-[#97A0AF] dark:text-slate-500 mb-3">
+                    Spaces you star will appear here
+                  </p>
+                ) : (
+                  <div className="space-y-0.5 mb-2">
+                    {starredSpaces.map((s) => (
+                      <Link
+                        key={s.id}
+                        href={`/spaces/${s.id}`}
+                        onClick={() => setFlyout(null)}
+                        className="flex items-center gap-2 px-2 py-1.5 rounded text-sm text-[#172B4D] dark:text-slate-300 hover:bg-[#F1F2F4] dark:hover:bg-[#21262d] transition-colors"
+                      >
+                        <span className="text-base leading-none">{s.emoji || "📁"}</span>
+                        <span className="truncate text-xs font-medium">{s.name}</span>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+                <Link
+                  href="/spaces"
+                  onClick={() => setFlyout(null)}
+                  className="flex items-center gap-2 text-sm text-[#172B4D] dark:text-slate-300 hover:text-[#0052CC] dark:hover:text-blue-400 transition-colors py-1"
+                >
+                  <svg viewBox="0 0 16 16" className="h-4 w-4 text-[#42526E]" fill="none" stroke="currentColor" strokeWidth="1.6">
+                    <line x1="2" y1="4" x2="14" y2="4" strokeLinecap="round" />
+                    <line x1="2" y1="8" x2="14" y2="8" strokeLinecap="round" />
+                    <line x1="2" y1="12" x2="9" y2="12" strokeLinecap="round" />
+                  </svg>
+                  View all spaces
+                </Link>
+              </div>
+            </div>
+          )}
 
           {/* ── Divider ── */}
           <div className="h-px bg-[#E8EAED] dark:bg-[#30363d] mx-0 my-1" />
@@ -426,7 +469,7 @@ export default function Sidebar({ open, onToggle, user }: SidebarProps) {
           {/* ── Bottom links ── */}
           <nav className="py-1">
             <BottomLink icon={<Building2 className="h-4 w-4" />} label="Company hub" />
-            <NavItem icon={<Users className="h-4 w-4" />} label="Teams" href="/teams" active={pathname === "/teams"} />
+            <BottomLink icon={<Users className="h-4 w-4" />} label="Teams" href="/teams" />
             <BottomLink icon={<More className="h-4 w-4" />} label="More" />
           </nav>
         </ScrollArea>
@@ -682,12 +725,24 @@ function NavItem({ icon, label, href, active, hasChevron, expanded, onToggle }: 
   return <Link href={href}>{content}</Link>;
 }
 
-function BottomLink({ icon, label }: { icon: React.ReactNode; label: string }) {
-  return (
-    <div className="flex items-center gap-3 px-3 py-2 text-sm text-[#172B4D] dark:text-slate-300 hover:bg-[#F1F2F4] dark:hover:bg-[#21262d] cursor-pointer transition-colors group">
+function BottomLink({ icon, label, href }: { icon: React.ReactNode; label: string; href?: string }) {
+  const inner = (
+    <>
       <span className="text-[#6B778C] dark:text-slate-400 shrink-0">{icon}</span>
       <span className="flex-1">{label}</span>
       <ExternalLink className="h-3.5 w-3.5 text-[#6B778C] opacity-0 group-hover:opacity-100 transition-opacity" />
+    </>
+  );
+  if (href) {
+    return (
+      <Link href={href} className="flex items-center gap-3 px-3 py-2 text-sm text-[#172B4D] dark:text-slate-300 hover:bg-[#F1F2F4] dark:hover:bg-[#21262d] transition-colors group">
+        {inner}
+      </Link>
+    );
+  }
+  return (
+    <div className="flex items-center gap-3 px-3 py-2 text-sm text-[#172B4D] dark:text-slate-300 hover:bg-[#F1F2F4] dark:hover:bg-[#21262d] cursor-pointer transition-colors group">
+      {inner}
     </div>
   );
 }
