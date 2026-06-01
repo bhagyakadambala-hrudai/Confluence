@@ -23,22 +23,19 @@ interface Space {
   created_at: string;
 }
 
-const FILTER_TABS = ["All", "Watching", "Starred", "Communal", "Personal", "Archived", "Trashed"] as const;
+const FILTER_TABS = ["All", "Watching", "Starred", "Communal", "Personal", "Archived"] as const;
 type FilterTab = (typeof FILTER_TABS)[number];
 
 export default function SpacesPage() {
   const router = useRouter();
   const [spaces, setSpaces] = useState<Space[]>([]);
   const [starredIds, setStarredIds] = useState<Set<string>>(new Set());
-  const [watchedIds, setWatchedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<FilterTab>("All");
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  useEffect(() => {
-    loadAll();
-  }, []);
+  useEffect(() => { loadAll(); }, []);
 
   async function loadAll() {
     setLoading(true);
@@ -80,12 +77,10 @@ export default function SpacesPage() {
     }
   }
 
-  const yourSpaces = spaces.filter((s) => starredIds.has(s.id));
-
   const filtered = spaces.filter((s) => {
     const matchSearch = !search || s.name.toLowerCase().includes(search.toLowerCase());
     if (activeTab === "Starred") return matchSearch && starredIds.has(s.id);
-    if (activeTab === "Watching") return matchSearch && watchedIds.has(s.id);
+    if (activeTab === "Watching") return matchSearch && false;
     return matchSearch;
   });
 
@@ -94,39 +89,25 @@ export default function SpacesPage() {
       <div className="max-w-5xl mx-auto px-8 py-8">
 
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-2xl font-bold text-[#172B4D] dark:text-white">Spaces</h1>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="px-4 py-2 text-sm font-medium text-[#172B4D] dark:text-slate-200 border border-[#DFE1E6] dark:border-slate-600 rounded hover:bg-[#F4F5F7] dark:hover:bg-slate-700 transition-colors"
-          >
-            Create a space
-          </button>
-        </div>
+        <h1 className="text-2xl font-bold text-[#172B4D] dark:text-white mb-6">Spaces</h1>
 
-        {/* Your spaces — starred */}
+        {/* Your spaces */}
         <section className="mb-8">
           <h2 className="text-base font-semibold text-[#172B4D] dark:text-white mb-3">Your spaces</h2>
-          {yourSpaces.length === 0 ? (
-            <div className="flex flex-wrap gap-3">
-              {spaces.slice(0, 6).map((space) => (
-                <SpaceCard key={space.id} space={space} />
-              ))}
-              {spaces.length === 0 && !loading && (
-                <button
-                  onClick={() => setShowCreateModal(true)}
-                  className="flex flex-col items-center justify-center w-36 h-36 border-2 border-dashed border-[#DFE1E6] dark:border-slate-600 rounded-lg hover:border-[#0052CC] hover:bg-[#F4F5F7] dark:hover:bg-slate-700/30 transition-colors group"
-                >
-                  <Plus className="h-6 w-6 text-[#C1C7D0] group-hover:text-[#0052CC] mb-1" />
-                  <span className="text-xs text-[#6B778C] group-hover:text-[#0052CC]">New space</span>
-                </button>
-              )}
-            </div>
+          {loading ? (
+            <div className="text-sm text-[#6B778C] py-4">Loading…</div>
           ) : (
             <div className="flex flex-wrap gap-3">
-              {yourSpaces.map((space) => (
+              {spaces.map((space) => (
                 <SpaceCard key={space.id} space={space} />
               ))}
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="flex flex-col items-center justify-center w-[152px] h-[152px] rounded-lg border-2 border-dashed border-[#DFE1E6] dark:border-slate-600 hover:border-[#0052CC] hover:bg-[#F8F9FF] dark:hover:bg-slate-700/20 transition-colors group"
+              >
+                <Plus className="h-6 w-6 text-[#C1C7D0] group-hover:text-[#0052CC] mb-1 transition-colors" />
+                <span className="text-xs text-[#6B778C] group-hover:text-[#0052CC] transition-colors">New space</span>
+              </button>
             </div>
           )}
         </section>
@@ -136,9 +117,9 @@ export default function SpacesPage() {
           <h2 className="text-base font-semibold text-[#172B4D] dark:text-white mb-3">All spaces</h2>
 
           {/* Filters row */}
-          <div className="flex items-center gap-3 mb-4">
+          <div className="flex flex-wrap items-center gap-2 mb-4">
             {/* Search */}
-            <div className="flex items-center gap-2 px-3 h-9 rounded border border-[#DFE1E6] dark:border-slate-600 bg-white dark:bg-slate-800 w-56 focus-within:border-[#0052CC] focus-within:ring-1 focus-within:ring-[#0052CC] transition-colors">
+            <div className="flex items-center gap-2 px-3 h-9 rounded border border-[#DFE1E6] dark:border-slate-600 bg-white dark:bg-slate-800 w-52 focus-within:border-[#0052CC] focus-within:ring-1 focus-within:ring-[#0052CC] transition-colors">
               <Search className="h-3.5 w-3.5 text-[#6B778C] shrink-0" />
               <input
                 value={search}
@@ -164,7 +145,7 @@ export default function SpacesPage() {
             </DropdownMenu>
 
             {/* Tab filters */}
-            <div className="flex items-center gap-0.5 ml-auto">
+            <div className="flex items-center gap-0.5 ml-auto flex-wrap">
               {FILTER_TABS.map((tab) => (
                 <button
                   key={tab}
@@ -187,37 +168,30 @@ export default function SpacesPage() {
           ) : filtered.length === 0 ? (
             <div className="text-sm text-[#6B778C] py-8 text-center">No spaces found</div>
           ) : (
-            <div className="border border-[#DFE1E6] dark:border-slate-700 rounded-lg overflow-hidden">
-              {filtered.map((space, i) => (
+            <div className="divide-y divide-[#F4F5F7] dark:divide-slate-700 border border-[#DFE1E6] dark:border-slate-700 rounded-lg overflow-hidden">
+              {filtered.map((space) => (
                 <div
                   key={space.id}
-                  className={`flex items-center gap-3 px-4 py-3 hover:bg-[#F4F5F7] dark:hover:bg-slate-700/30 transition-colors group ${
-                    i > 0 ? "border-t border-[#F4F5F7] dark:border-slate-700" : ""
-                  }`}
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-[#F8F9FF] dark:hover:bg-slate-700/30 transition-colors group bg-white dark:bg-transparent"
                 >
-                  {/* Space icon */}
                   <Link href={`/spaces/${space.id}`} className="flex items-center gap-3 flex-1 min-w-0">
-                    <div className="h-9 w-9 rounded-md bg-gradient-to-br from-[#0052CC] to-[#0065FF] flex items-center justify-center shrink-0 text-base leading-none">
+                    <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-[#6554C0] to-[#0052CC] flex items-center justify-center shrink-0 text-xl leading-none shadow-sm">
                       {space.emoji || "📁"}
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-[#172B4D] dark:text-slate-200 truncate group-hover:text-[#0052CC] transition-colors">
                         {space.name}
                       </p>
-                      {space.description && (
-                        <p className="text-xs text-[#6B778C] dark:text-slate-400 truncate">{space.description}</p>
-                      )}
                     </div>
                   </Link>
 
-                  {/* Category tag */}
-                  <span className="text-xs text-[#6B778C] dark:text-slate-400 hidden md:block shrink-0 w-28 truncate">
+                  {/* Category */}
+                  <span className="text-sm text-[#6B778C] dark:text-slate-400 hidden md:block shrink-0 w-32 truncate">
                     {space.description || "collaboration"}
                   </span>
 
-                  {/* Actions — visible on hover */}
+                  {/* Actions */}
                   <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {/* Watch */}
                     <button
                       onClick={() => toast("Watch feature coming soon")}
                       className="h-8 w-8 flex items-center justify-center rounded hover:bg-[#EBECF0] dark:hover:bg-slate-600 transition-colors"
@@ -225,17 +199,13 @@ export default function SpacesPage() {
                     >
                       <Eye className="h-4 w-4 text-[#6B778C]" />
                     </button>
-
-                    {/* Star */}
                     <button
                       onClick={() => toggleStar(space.id)}
                       className="h-8 w-8 flex items-center justify-center rounded hover:bg-[#EBECF0] dark:hover:bg-slate-600 transition-colors"
-                      title={starredIds.has(space.id) ? "Unstar" : "Star"}
+                      title={starredIds.has(space.id) ? "Unstar" : "Star this space"}
                     >
-                      <Star className={`h-4 w-4 ${starredIds.has(space.id) ? "fill-yellow-400 text-yellow-400" : "text-[#6B778C]"}`} />
+                      <Star className={`h-4 w-4 ${starredIds.has(space.id) ? "fill-[#FFAB00] text-[#FFAB00]" : "text-[#6B778C]"}`} />
                     </button>
-
-                    {/* More */}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <button className="h-8 w-8 flex items-center justify-center rounded hover:bg-[#EBECF0] dark:hover:bg-slate-600 transition-colors">
@@ -281,12 +251,16 @@ function SpaceCard({ space }: { space: Space }) {
   return (
     <Link
       href={`/spaces/${space.id}`}
-      className="flex flex-col items-center w-36 h-36 rounded-lg border border-[#DFE1E6] dark:border-slate-700 overflow-hidden hover:shadow-md hover:border-[#0052CC]/40 transition-all group bg-white dark:bg-[#1e2d3d]"
+      className="flex flex-col w-[152px] h-[152px] rounded-lg border border-[#DFE1E6] dark:border-slate-700 overflow-hidden hover:shadow-md hover:border-[#0052CC]/30 transition-all group bg-white dark:bg-[#1e2d3d]"
     >
-      <div className="flex-1 w-full flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-800 group-hover:from-blue-50 group-hover:to-indigo-100 dark:group-hover:from-slate-600 dark:group-hover:to-slate-700 transition-colors">
-        <span className="text-4xl leading-none">{space.emoji || "📁"}</span>
+      {/* Icon area */}
+      <div className="flex-1 w-full flex items-center justify-center bg-[#F4F5F7] dark:bg-slate-700/50 group-hover:bg-[#EBF0FF] dark:group-hover:bg-slate-700 transition-colors">
+        <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-[#6554C0] to-[#0052CC] flex items-center justify-center text-3xl shadow-md">
+          {space.emoji || "📁"}
+        </div>
       </div>
-      <div className="w-full px-2 py-2 text-center">
+      {/* Name */}
+      <div className="px-3 py-2.5 border-t border-[#E8EAED] dark:border-slate-700 bg-white dark:bg-[#1e2d3d]">
         <p className="text-xs font-semibold text-[#172B4D] dark:text-slate-200 truncate group-hover:text-[#0052CC] transition-colors">
           {space.name}
         </p>
