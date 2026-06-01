@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { X, ChevronRight } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { X, ChevronDown, ChevronRight, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 interface CreateSpaceModalProps {
@@ -11,9 +11,10 @@ interface CreateSpaceModalProps {
 }
 
 const ICON_OPTIONS = [
-  "🔧", "📸", "🌐", "📋", "🗂️", "🚩", "🧪",
-  "🚀", "💡", "📊", "🎯", "📝", "🔬", "🎨",
-  "💼", "🌟", "🏆", "🔑", "📌", "🌈",
+  "📝", "🐱", "📋", "🌐", "⚡", "🔍", "🔄",
+  "🗂️", "🚀", "💡", "📊", "🎯", "🔬", "🎨",
+  "💼", "🌟", "🏆", "🔑", "📌", "🌈", "🔧", "📸",
+  "🧪", "🎵", "🏠", "🌍", "💎", "🎭", "🦁", "🐬",
 ];
 
 const PURPOSES = [
@@ -36,24 +37,175 @@ const PURPOSES = [
 
 type Purpose = (typeof PURPOSES)[number]["id"];
 
+const ACCESS_OPTIONS = [
+  { id: "default", label: "Default", description: "Use the access settings recommended by your admin" },
+  { id: "copy", label: "Copy access settings", description: "Use another space's settings" },
+  { id: "restricted", label: "Restricted", description: "Only you have access until you add others" },
+] as const;
+
+type AccessOption = (typeof ACCESS_OPTIONS)[number]["id"];
+
+interface Feature {
+  id: string;
+  label: string;
+  defaultOn: boolean;
+}
+
+const FEATURES: Feature[] = [
+  { id: "blogs", label: "Blogs", defaultOn: false },
+  { id: "live_docs", label: "Live docs", defaultOn: true },
+  { id: "calendars", label: "Calendars", defaultOn: true },
+  { id: "whiteboards", label: "Whiteboards", defaultOn: true },
+  { id: "databases", label: "Databases", defaultOn: true },
+  { id: "smart_links", label: "Smart Links", defaultOn: true },
+  { id: "folders", label: "Folders", defaultOn: true },
+];
+
+/* ── Right panel illustrations ── */
+function RightPanel({ purpose, spaceName, emoji }: { purpose: Purpose; spaceName: string; emoji: string }) {
+  const configs = {
+    collaboration: {
+      bg: "from-[#E8F4FC] via-[#C8DFF5] to-[#B8D0EE]",
+      illustration: (
+        <div className="flex flex-col items-center gap-4">
+          <div className="flex items-end gap-3">
+            <div className="h-14 w-14 rounded-full bg-[#36B37E] flex items-center justify-center text-2xl shadow-lg">💬</div>
+            <div className="h-10 w-10 rounded-full bg-[#0052CC] flex items-center justify-center text-lg shadow-md">💬</div>
+          </div>
+          <div className="text-xs font-semibold text-[#172B4D] dark:text-white mt-1">Collaborate in real time</div>
+        </div>
+      ),
+      tagline: "Perfect for team collaboration",
+    },
+    knowledge: {
+      bg: "from-[#FFF9E6] via-[#FFF0B3] to-[#FFE380]",
+      illustration: (
+        <div className="flex flex-col items-center gap-2">
+          <div className="text-6xl">📚</div>
+          <div className="text-xs font-semibold text-[#172B4D] dark:text-white mt-1">Share knowledge easily</div>
+        </div>
+      ),
+      tagline: "Great for documentation",
+    },
+    custom: {
+      bg: "from-[#E3FCEF] via-[#ABF5D1] to-[#79F2C0]",
+      illustration: (
+        <div className="flex flex-col items-center gap-2">
+          <div className="text-6xl">💡</div>
+          <div className="text-xs font-semibold text-[#172B4D] dark:text-white mt-1">Configured your way</div>
+        </div>
+      ),
+      tagline: "Configure it just how you need it",
+    },
+  };
+
+  const c = configs[purpose];
+
+  return (
+    <div className={`flex-1 bg-gradient-to-br ${c.bg} relative overflow-hidden flex flex-col`}>
+      {/* Space preview card */}
+      <div className="flex-1 flex items-start justify-center pt-12 px-6">
+        <div className="w-full max-w-[240px]">
+          <div className="bg-white dark:bg-[#1e2636] rounded-xl shadow-xl p-4 mb-3">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-2xl">{emoji}</span>
+              <span className="text-sm font-semibold text-[#172B4D] dark:text-white truncate">
+                {spaceName || "Your space"}
+              </span>
+            </div>
+            <div className="text-xs font-semibold text-[#6B778C] mb-2">Content</div>
+            <div className="space-y-1.5">
+              {purpose === "collaboration" && ["Team goals", "Ideas", "Brainstorm", "Research", "Calendar"].map((item) => (
+                <div key={item} className="flex items-center gap-2">
+                  <div className="h-1.5 w-1.5 rounded-full bg-[#DFE1E6]" />
+                  <span className="text-xs text-[#6B778C]">{item}</span>
+                </div>
+              ))}
+              {purpose === "knowledge" && ["Health and medical benefits", "Retirement and financial be...", "Time off and leave", "Work-life balance and flexib...", "Employee recognition and r...", "Whiteboard", "Database"].map((item) => (
+                <div key={item} className="flex items-center gap-2">
+                  <div className="h-1.5 w-1.5 rounded-full bg-[#DFE1E6]" />
+                  <span className="text-xs text-[#6B778C] truncate">{item}</span>
+                </div>
+              ))}
+              {purpose === "custom" && ["Page", "Whiteboard", "Database", "Calendar"].map((item) => (
+                <div key={item} className="flex items-center gap-2">
+                  <div className="h-1.5 w-1.5 rounded-full bg-[#DFE1E6]" />
+                  <span className="text-xs text-[#6B778C]">{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Floating accent */}
+          <div className="ml-auto w-32 bg-white dark:bg-[#1e2636] rounded-xl shadow-lg p-3">
+            <div className="text-xs font-bold text-[#172B4D] dark:text-white mb-1.5 truncate">
+              {spaceName || (purpose === "knowledge" ? "Policies" : purpose === "custom" ? "Documents" : "Q3 Planning")}
+            </div>
+            <div className="space-y-1">
+              {[70, 50, 85, 40].map((w, i) => (
+                <div key={i} className={`h-1.5 rounded-full ${i === 2 ? "bg-[#36B37E]" : "bg-[#DFE1E6] dark:bg-[#30363d]"}`} style={{ width: `${w}%` }} />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom illustration */}
+      <div className="flex justify-center pb-6 opacity-80">
+        {c.illustration}
+      </div>
+    </div>
+  );
+}
+
+/* ── Toggle switch ── */
+function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button
+      onClick={() => onChange(!on)}
+      className={`relative w-10 h-6 rounded-full transition-colors ${on ? "bg-[#36B37E]" : "bg-[#DFE1E6] dark:bg-[#30363d]"}`}
+    >
+      <span className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${on ? "translate-x-4" : ""}`} />
+    </button>
+  );
+}
+
 export default function CreateSpaceModal({ open, onClose, onCreated }: CreateSpaceModalProps) {
   const [step, setStep] = useState<1 | 2>(1);
   const [name, setName] = useState("");
-  const [emoji, setEmoji] = useState("🔧");
+  const [emoji, setEmoji] = useState("📝");
   const [purpose, setPurpose] = useState<Purpose>("collaboration");
-  const [description, setDescription] = useState("");
+  const [access, setAccess] = useState<AccessOption>("default");
   const [nameError, setNameError] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [showAllIcons, setShowAllIcons] = useState(false);
+  const [showIconPicker, setShowIconPicker] = useState(false);
+  const [showAccessDropdown, setShowAccessDropdown] = useState(false);
+  const [features, setFeatures] = useState<Record<string, boolean>>(
+    Object.fromEntries(FEATURES.map((f) => [f.id, f.defaultOn]))
+  );
+
+  const iconPickerRef = useRef<HTMLDivElement>(null);
+  const accessRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (iconPickerRef.current && !iconPickerRef.current.contains(e.target as Node)) setShowIconPicker(false);
+      if (accessRef.current && !accessRef.current.contains(e.target as Node)) setShowAccessDropdown(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
 
   if (!open) return null;
-
-  const visibleIcons = showAllIcons ? ICON_OPTIONS : ICON_OPTIONS.slice(0, 7);
 
   function handleNext() {
     if (!name.trim()) { setNameError(true); return; }
     setNameError(false);
     setStep(2);
+  }
+
+  function restoreDefaults() {
+    setFeatures(Object.fromEntries(FEATURES.map((f) => [f.id, f.defaultOn])));
   }
 
   async function handleCreate() {
@@ -62,7 +214,7 @@ export default function CreateSpaceModal({ open, onClose, onCreated }: CreateSpa
     const resp = await fetch("/api/spaces", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: name.trim(), description: description.trim(), emoji }),
+      body: JSON.stringify({ name: name.trim(), emoji }),
     });
     setLoading(false);
     if (resp.ok) {
@@ -76,37 +228,34 @@ export default function CreateSpaceModal({ open, onClose, onCreated }: CreateSpa
   }
 
   function handleClose() {
-    setStep(1);
-    setName("");
-    setEmoji("🔧");
-    setPurpose("collaboration");
-    setDescription("");
-    setNameError(false);
+    setStep(1); setName(""); setEmoji("📝"); setPurpose("collaboration");
+    setAccess("default"); setNameError(false); setShowIconPicker(false);
+    setFeatures(Object.fromEntries(FEATURES.map((f) => [f.id, f.defaultOn])));
     onClose();
   }
 
+  const selectedAccess = ACCESS_OPTIONS.find((a) => a.id === access)!;
+  const purposeLabel = purpose === "knowledge" ? "knowledge base" : purpose;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
       <div className="absolute inset-0 bg-black/50" onClick={handleClose} />
+      <div className="relative z-10 w-full max-w-5xl h-[90vh] max-h-[700px] bg-white dark:bg-[#1e2636] rounded-xl shadow-2xl flex overflow-hidden">
 
-      {/* Modal */}
-      <div className="relative z-10 w-full max-w-5xl h-[90vh] max-h-[680px] bg-white dark:bg-[#1e2636] rounded-xl shadow-2xl flex overflow-hidden">
-
-        {/* Left panel — form */}
+        {/* ── Left panel ── */}
         <div className="flex flex-col w-[55%] min-w-0 h-full">
-          {/* Scrollable form area */}
           <div className="flex-1 overflow-y-auto px-10 py-8">
-            <h1 className="text-2xl font-bold text-[#172B4D] dark:text-white mb-1">Create new space</h1>
-            <p className="text-sm text-[#6B778C] dark:text-slate-400 mb-8">
-              Required fields are marked with an asterisk <span className="text-red-500">*</span>
-            </p>
 
             {step === 1 ? (
-              <div className="space-y-7">
-                {/* Space name */}
-                <div>
-                  <label className="block text-xs font-semibold text-[#172B4D] dark:text-slate-300 mb-1.5 uppercase tracking-wide">
+              <>
+                <h1 className="text-2xl font-bold text-[#172B4D] dark:text-white mb-1">Create new space</h1>
+                <p className="text-sm text-[#6B778C] dark:text-slate-400 mb-7">
+                  Required fields are marked with an asterisk <span className="text-red-500">*</span>
+                </p>
+
+                {/* Name */}
+                <div className="mb-6">
+                  <label className="block text-xs font-semibold text-[#172B4D] dark:text-slate-300 mb-1.5">
                     Name this space <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -115,53 +264,78 @@ export default function CreateSpaceModal({ open, onClose, onCreated }: CreateSpa
                     onChange={(e) => { setName(e.target.value); if (nameError) setNameError(false); }}
                     onKeyDown={(e) => e.key === "Enter" && handleNext()}
                     placeholder="Space name"
-                    className={`w-full h-11 px-3 rounded border text-sm outline-none transition-colors bg-white dark:bg-[#161B22] dark:text-white ${
+                    className={`w-full h-10 px-3 rounded border text-sm outline-none transition-colors bg-white dark:bg-[#0d1117] dark:text-white ${
                       nameError
                         ? "border-red-500 focus:ring-1 focus:ring-red-500"
                         : "border-[#DFE1E6] dark:border-[#30363d] focus:border-[#0052CC] focus:ring-1 focus:ring-[#0052CC]"
                     }`}
                   />
                   {nameError && (
-                    <p className="mt-1.5 text-xs text-red-500 flex items-center gap-1">
-                      <span className="inline-block w-3.5 h-3.5 rounded-full bg-red-500 text-white text-[9px] flex items-center justify-center font-bold leading-none">!</span>
+                    <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
+                      <span className="inline-flex h-3.5 w-3.5 rounded-full bg-red-500 text-white text-[9px] items-center justify-center font-bold shrink-0">!</span>
                       Space name is required.
                     </p>
                   )}
                 </div>
 
                 {/* Icon picker */}
-                <div>
-                  <label className="block text-xs font-semibold text-[#172B4D] dark:text-slate-300 mb-2 uppercase tracking-wide">
+                <div className="mb-6">
+                  <label className="block text-xs font-semibold text-[#172B4D] dark:text-slate-300 mb-2">
                     Choose an icon
                   </label>
-                  <div className="flex flex-wrap items-center gap-2">
-                    {visibleIcons.map((ic) => (
+                  <div className="relative" ref={iconPickerRef}>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {ICON_OPTIONS.slice(0, 7).map((ic) => (
+                        <button
+                          key={ic}
+                          onClick={() => setEmoji(ic)}
+                          className={`h-10 w-10 rounded-lg text-xl flex items-center justify-center transition-all shrink-0 ${
+                            emoji === ic
+                              ? "ring-2 ring-[#0052CC] ring-offset-1 bg-[#EAF2FF] dark:bg-blue-900/30"
+                              : "bg-[#F4F5F7] dark:bg-[#21262d] hover:bg-[#EBECF0] dark:hover:bg-[#30363d]"
+                          }`}
+                        >
+                          {ic}
+                        </button>
+                      ))}
                       <button
-                        key={ic}
-                        onClick={() => setEmoji(ic)}
-                        className={`h-10 w-10 rounded-lg text-xl flex items-center justify-center transition-all ${
-                          emoji === ic
-                            ? "ring-2 ring-[#0052CC] ring-offset-1 bg-[#EAF2FF] dark:bg-blue-900/30"
-                            : "bg-[#F4F5F7] dark:bg-[#21262d] hover:bg-[#EBECF0] dark:hover:bg-[#30363d]"
-                        }`}
-                      >
-                        {ic}
-                      </button>
-                    ))}
-                    {!showAllIcons && (
-                      <button
-                        onClick={() => setShowAllIcons(true)}
-                        className="h-10 px-3 rounded-lg text-sm text-[#42526E] dark:text-slate-400 bg-[#F4F5F7] dark:bg-[#21262d] hover:bg-[#EBECF0] dark:hover:bg-[#30363d] transition-colors border border-[#DFE1E6] dark:border-[#30363d]"
+                        onClick={() => setShowIconPicker((v) => !v)}
+                        className="h-10 px-3 rounded-lg text-sm text-[#42526E] dark:text-slate-400 bg-[#F4F5F7] dark:bg-[#21262d] hover:bg-[#EBECF0] dark:hover:bg-[#30363d] transition-colors border border-[#DFE1E6] dark:border-[#30363d] shrink-0"
                       >
                         See more
                       </button>
+                    </div>
+
+                    {/* Icon picker dropdown */}
+                    {showIconPicker && (
+                      <div className="absolute left-0 top-full mt-1 w-72 bg-white dark:bg-[#1B2A3B] border border-[#DFE1E6] dark:border-[#30363d] rounded-lg shadow-xl z-50 overflow-hidden">
+                        <button className="flex items-center gap-2 w-full px-4 py-3 text-sm text-[#172B4D] dark:text-slate-200 hover:bg-[#F4F5F7] dark:hover:bg-[#21262d] border-b border-[#DFE1E6] dark:border-[#30363d] transition-colors">
+                          <Upload className="h-4 w-4 text-[#42526E]" />
+                          Upload image
+                        </button>
+                        <div className="p-3 grid grid-cols-5 gap-1.5 max-h-52 overflow-y-auto">
+                          {ICON_OPTIONS.map((ic) => (
+                            <button
+                              key={ic}
+                              onClick={() => { setEmoji(ic); setShowIconPicker(false); }}
+                              className={`h-10 w-full rounded-lg text-xl flex items-center justify-center transition-all ${
+                                emoji === ic
+                                  ? "ring-2 ring-[#0052CC] bg-[#EAF2FF] dark:bg-blue-900/30"
+                                  : "hover:bg-[#F4F5F7] dark:hover:bg-[#21262d]"
+                              }`}
+                            >
+                              {ic}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     )}
                   </div>
                 </div>
 
                 {/* Purpose */}
-                <div>
-                  <label className="block text-xs font-semibold text-[#172B4D] dark:text-slate-300 mb-2 uppercase tracking-wide">
+                <div className="mb-6">
+                  <label className="block text-xs font-semibold text-[#172B4D] dark:text-slate-300 mb-2">
                     Choose a purpose for this space
                   </label>
                   <div className="space-y-2">
@@ -169,10 +343,10 @@ export default function CreateSpaceModal({ open, onClose, onCreated }: CreateSpa
                       <button
                         key={p.id}
                         onClick={() => setPurpose(p.id)}
-                        className={`w-full text-left px-4 py-3.5 rounded-lg border transition-all ${
+                        className={`w-full text-left px-4 py-3 rounded-lg border transition-all ${
                           purpose === p.id
-                            ? "border-[#0052CC] bg-[#EAF2FF] dark:bg-blue-900/20 dark:border-blue-500"
-                            : "border-[#DFE1E6] dark:border-[#30363d] hover:border-[#B3D4FF] dark:hover:border-[#58a6ff] hover:bg-[#F8F9FF] dark:hover:bg-[#21262d]"
+                            ? "border-[#0052CC] bg-white dark:bg-[#0d1117]"
+                            : "border-[#DFE1E6] dark:border-[#30363d] hover:border-[#B3D4FF] dark:hover:border-[#58a6ff]"
                         }`}
                       >
                         <p className="text-sm font-semibold text-[#172B4D] dark:text-white">{p.title}</p>
@@ -181,51 +355,81 @@ export default function CreateSpaceModal({ open, onClose, onCreated }: CreateSpa
                     ))}
                   </div>
                 </div>
-              </div>
+
+                {/* Space access */}
+                <div className="mb-4">
+                  <label className="block text-xs font-semibold text-[#172B4D] dark:text-slate-300 mb-2">
+                    Space access
+                  </label>
+                  <div className="relative" ref={accessRef}>
+                    <button
+                      onClick={() => setShowAccessDropdown((v) => !v)}
+                      className="w-full text-left px-4 py-3 rounded-lg border border-[#DFE1E6] dark:border-[#30363d] bg-white dark:bg-[#0d1117] hover:border-[#B3D4FF] transition-colors flex items-center justify-between"
+                    >
+                      <div>
+                        <p className="text-sm font-semibold text-[#172B4D] dark:text-white">{selectedAccess.label}</p>
+                        <p className="text-xs text-[#6B778C] dark:text-slate-400 mt-0.5">{selectedAccess.description}</p>
+                      </div>
+                      <ChevronDown className={`h-4 w-4 text-[#6B778C] transition-transform shrink-0 ml-2 ${showAccessDropdown ? "rotate-180" : ""}`} />
+                    </button>
+                    {showAccessDropdown && (
+                      <div className="absolute left-0 right-0 top-full mt-0.5 bg-white dark:bg-[#1B2A3B] border border-[#DFE1E6] dark:border-[#30363d] rounded-lg shadow-xl z-50 overflow-hidden">
+                        {ACCESS_OPTIONS.map((opt) => (
+                          <button
+                            key={opt.id}
+                            onClick={() => { setAccess(opt.id); setShowAccessDropdown(false); }}
+                            className={`w-full text-left px-4 py-3 hover:bg-[#F4F5F7] dark:hover:bg-[#21262d] transition-colors ${
+                              access === opt.id ? "bg-[#F4F5F7] dark:bg-[#21262d]" : ""
+                            }`}
+                          >
+                            <p className="text-sm font-semibold text-[#172B4D] dark:text-white">{opt.label}</p>
+                            <p className="text-xs text-[#6B778C] dark:text-slate-400 mt-0.5">{opt.description}</p>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
             ) : (
-              /* Step 2 */
-              <div className="space-y-7">
-                <div>
-                  <label className="block text-xs font-semibold text-[#172B4D] dark:text-slate-300 mb-1.5 uppercase tracking-wide">
-                    Space name
-                  </label>
-                  <div className="flex items-center gap-3 px-3 h-11 rounded border border-[#DFE1E6] dark:border-[#30363d] bg-[#F4F5F7] dark:bg-[#21262d]">
-                    <span className="text-xl">{emoji}</span>
-                    <span className="text-sm text-[#172B4D] dark:text-white">{name}</span>
-                  </div>
+              /* ── Step 2 ── */
+              <>
+                <h1 className="text-2xl font-bold text-[#172B4D] dark:text-white mb-6">
+                  Confirm your {purposeLabel} space
+                </h1>
+
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-sm font-semibold text-[#172B4D] dark:text-white">Features</span>
+                  <button className="text-sm text-[#0052CC] hover:underline">More about features</button>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-[#172B4D] dark:text-slate-300 mb-1.5 uppercase tracking-wide">
-                    Description <span className="text-[#6B778C] font-normal normal-case">(optional)</span>
-                  </label>
-                  <textarea
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="What is this space for?"
-                    rows={3}
-                    className="w-full px-3 py-2.5 rounded border border-[#DFE1E6] dark:border-[#30363d] text-sm outline-none bg-white dark:bg-[#161B22] dark:text-white focus:border-[#0052CC] focus:ring-1 focus:ring-[#0052CC] resize-none transition-colors"
-                  />
+                <div className="border border-[#DFE1E6] dark:border-[#30363d] rounded-lg overflow-hidden mb-4">
+                  {FEATURES.map((feat, i) => (
+                    <div
+                      key={feat.id}
+                      className={`flex items-center justify-between px-4 py-3.5 ${
+                        i < FEATURES.length - 1 ? "border-b border-[#DFE1E6] dark:border-[#30363d]" : ""
+                      }`}
+                    >
+                      <span className="text-sm text-[#172B4D] dark:text-slate-200">{feat.label}</span>
+                      <Toggle
+                        on={features[feat.id] ?? feat.defaultOn}
+                        onChange={(v) => setFeatures((prev) => ({ ...prev, [feat.id]: v }))}
+                      />
+                    </div>
+                  ))}
                 </div>
 
-                <div className="bg-[#F4F5F7] dark:bg-[#21262d] rounded-lg p-4">
-                  <p className="text-xs font-semibold text-[#172B4D] dark:text-slate-300 mb-1">Summary</p>
-                  <div className="flex items-center gap-2 text-sm text-[#42526E] dark:text-slate-400">
-                    <span className="text-base">{emoji}</span>
-                    <span className="font-medium text-[#172B4D] dark:text-white">{name}</span>
-                    <span className="text-[#C1C7D0]">·</span>
-                    <span className="capitalize">{purpose.replace("knowledge", "Knowledge base")}</span>
-                  </div>
-                </div>
-              </div>
+                <button onClick={restoreDefaults} className="text-sm text-[#6B778C] dark:text-slate-400 hover:text-[#172B4D] dark:hover:text-white transition-colors">
+                  Restore defaults
+                </button>
+              </>
             )}
           </div>
 
           {/* Footer */}
-          <div className="shrink-0 flex items-center justify-between px-10 py-5 border-t border-[#E8EAED] dark:border-[#30363d]">
-            <span className="text-sm text-[#6B778C] dark:text-slate-400">
-              Step {step} of 2
-            </span>
+          <div className="shrink-0 flex items-center justify-between px-10 py-4 border-t border-[#E8EAED] dark:border-[#30363d]">
+            <span className="text-sm text-[#6B778C] dark:text-slate-400">Step {step} of 2</span>
             <div className="flex items-center gap-3">
               {step === 2 && (
                 <button
@@ -252,66 +456,15 @@ export default function CreateSpaceModal({ open, onClose, onCreated }: CreateSpa
           </div>
         </div>
 
-        {/* Right panel — illustration */}
-        <div className="flex-1 bg-gradient-to-br from-[#E8F4FC] via-[#C8DFF5] to-[#B8D0EE] dark:from-[#1a2332] dark:via-[#1e2a3a] dark:to-[#243040] relative overflow-hidden flex flex-col items-center justify-center p-8">
-
-          {/* Close button */}
+        {/* ── Right panel ── */}
+        <div className="flex-1 relative overflow-hidden">
           <button
             onClick={handleClose}
-            className="absolute top-4 right-4 h-8 w-8 flex items-center justify-center rounded-full bg-white/60 dark:bg-black/20 hover:bg-white/90 dark:hover:bg-black/40 transition-colors text-[#42526E] dark:text-slate-300"
+            className="absolute top-4 right-4 z-10 h-8 w-8 flex items-center justify-center rounded-full bg-white/60 dark:bg-black/20 hover:bg-white/90 dark:hover:bg-black/40 transition-colors text-[#42526E] dark:text-slate-300"
           >
             <X className="h-4 w-4" />
           </button>
-
-          {/* Decorative illustration */}
-          <div className="relative w-full max-w-xs">
-            {/* Space preview card */}
-            <div className="bg-white dark:bg-[#1e2636] rounded-xl shadow-xl p-4 mb-4">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="h-9 w-9 rounded-lg bg-[#FF5630] flex items-center justify-center text-xl">
-                  {emoji || "🔧"}
-                </div>
-                <span className="text-sm font-semibold text-[#172B4D] dark:text-white truncate">
-                  {name || "Your space"}
-                </span>
-              </div>
-              <div className="space-y-1.5">
-                {["Content", "Team goals", "Ideas", "Brainstorm", "Research", "Calendar"].map((item, i) => (
-                  <div key={item} className="flex items-center gap-2 py-0.5">
-                    <div className={`h-1.5 w-1.5 rounded-full ${i === 0 ? "bg-[#6554C0]" : "bg-[#DFE1E6] dark:bg-[#30363d]"}`} />
-                    <span className={`text-xs ${i === 0 ? "text-[#172B4D] dark:text-white font-medium" : "text-[#6B778C] dark:text-slate-400"}`}>
-                      {item}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Floating accent card */}
-            <div className="absolute -right-4 top-8 bg-white dark:bg-[#1e2636] rounded-xl shadow-lg p-3 w-36">
-              <div className="text-xs font-bold text-[#172B4D] dark:text-white mb-1">
-                {name ? name.slice(0, 12) + (name.length > 12 ? "…" : "") : "Q3 Planning"}
-              </div>
-              <div className="space-y-1">
-                {[70, 50, 85, 40].map((w, i) => (
-                  <div key={i} className={`h-1.5 rounded-full ${i === 2 ? "bg-[#36B37E]" : "bg-[#DFE1E6] dark:bg-[#30363d]"}`} style={{ width: `${w}%` }} />
-                ))}
-              </div>
-            </div>
-
-            {/* Chat bubble decorations */}
-            <div className="flex items-end gap-2 mt-2 opacity-70">
-              <div className="h-10 w-10 rounded-full bg-[#36B37E] flex items-center justify-center text-lg">💬</div>
-              <div className="h-8 w-8 rounded-full bg-[#0052CC] flex items-center justify-center text-sm">💬</div>
-            </div>
-          </div>
-
-          {/* Purpose label */}
-          <p className="mt-6 text-xs text-[#42526E] dark:text-slate-400 text-center">
-            {purpose === "collaboration" && "Perfect for real-time team collaboration"}
-            {purpose === "knowledge" && "Great for documentation and guides"}
-            {purpose === "custom" && "Configure it just how you need it"}
-          </p>
+          <RightPanel purpose={purpose} spaceName={name} emoji={emoji} />
         </div>
       </div>
     </div>
