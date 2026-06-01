@@ -214,23 +214,12 @@ export default function Sidebar({ open, onToggle, user, width = 280 }: SidebarPr
 
         {/* ── Logo bar ── */}
         <div className="flex items-center justify-between px-3 py-2.5 border-b border-[#E8EAED] dark:border-[#30363d]">
-          <div className="flex items-center gap-2">
-            <button className="h-8 w-8 flex items-center justify-center rounded hover:bg-[#F1F2F4] dark:hover:bg-[#21262d] transition-colors">
-              <LayoutGrid className="h-4.5 w-4.5 text-[#42526E] dark:text-slate-400" strokeWidth={1.8} />
-            </button>
-            <Link href="/home" className="flex items-center gap-1.5">
-              <div className="h-6 w-6 bg-[#0052CC] rounded flex items-center justify-center">
-                <BookOpen className="h-3.5 w-3.5 text-white" strokeWidth={2.5} />
-              </div>
-              <span className="font-semibold text-[#172B4D] dark:text-white text-sm">Confluence</span>
-            </Link>
-          </div>
-          <button
-            onClick={onToggle}
-            className="h-7 w-7 flex items-center justify-center rounded hover:bg-[#F1F2F4] dark:hover:bg-[#21262d] transition-colors"
-          >
-            <PanelLeftClose className="h-4 w-4 text-[#6B778C] dark:text-slate-400" />
-          </button>
+          <Link href="/home" className="flex items-center gap-1.5">
+            <div className="h-6 w-6 bg-[#0052CC] rounded flex items-center justify-center">
+              <BookOpen className="h-3.5 w-3.5 text-white" strokeWidth={2.5} />
+            </div>
+            <span className="font-semibold text-[#172B4D] dark:text-white text-sm">Confluence</span>
+          </Link>
         </div>
 
         <ScrollArea className="flex-1">
