@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   ChevronRight, Plus, MoreHorizontal, Search,
-  Clock, Star, Globe, Layers,
+  LayoutGrid, BookOpen, Clock, Star, Globe, Layers,
   Building2, Users, MoreHorizontal as More,
   FileText, ExternalLink, X, Filter, Lock,
   Settings, Trash2, Archive, Link2, Copy, Move, Pencil,
@@ -211,6 +211,28 @@ export default function Sidebar({ open, onToggle, user, width = 280 }: SidebarPr
         className="shrink-0 flex flex-col h-full bg-white dark:bg-[#161B22] select-none overflow-hidden"
         style={{ width }}
       >
+
+        {/* ── Logo bar ── */}
+        <div className="flex items-center gap-1 px-2 h-12 border-b border-[#E8EAED] dark:border-[#30363d] shrink-0">
+          <button className="h-8 w-8 flex items-center justify-center rounded hover:bg-[#F1F2F4] dark:hover:bg-[#21262d] transition-colors shrink-0">
+            <LayoutGrid className="h-4 w-4 text-[#42526E] dark:text-slate-400" strokeWidth={1.8} />
+          </button>
+          <Link href="/home" className="flex items-center gap-1.5 flex-1 min-w-0">
+            <div className="h-6 w-6 bg-[#0052CC] rounded flex items-center justify-center shrink-0">
+              <BookOpen className="h-3.5 w-3.5 text-white" strokeWidth={2.5} />
+            </div>
+            <span className="font-semibold text-[#172B4D] dark:text-white text-sm truncate">Confluence</span>
+          </Link>
+          <button
+            onClick={onToggle}
+            className="h-8 w-8 flex items-center justify-center rounded hover:bg-[#F1F2F4] dark:hover:bg-[#21262d] transition-colors shrink-0"
+          >
+            <svg viewBox="0 0 20 20" className="h-4 w-4 text-[#42526E] dark:text-slate-400" fill="none" stroke="currentColor" strokeWidth="1.6">
+              <rect x="3" y="4" width="14" height="12" rx="1.5" />
+              <line x1="7" y1="4" x2="7" y2="16" />
+            </svg>
+          </button>
+        </div>
 
         <ScrollArea className="flex-1">
           {/* ── Global nav ── */}

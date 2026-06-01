@@ -17,22 +17,20 @@ import CreateSpaceModal from "@/components/spaces/CreateSpaceModal";
 import {
   Moon, Sun, Search, LogOut, Settings, User as UserIcon,
   Plus, HelpCircle, FileText, LayoutTemplate, Globe, PenLine,
-  Database, Link2, Users, LayoutGrid, BookOpen,
+  Database, Link2, Users,
 } from "lucide-react";
 import NotificationDropdown from "@/components/layout/NotificationDropdown";
 import { useTheme } from "next-themes";
 import { getInitials } from "@/lib/utils";
 import { toast } from "sonner";
-import Link from "next/link";
 
 interface NavbarProps {
   user: User;
   onToggleSidebar: () => void;
   sidebarOpen: boolean;
-  sidebarWidth?: number;
 }
 
-export default function Navbar({ user, onToggleSidebar, sidebarOpen, sidebarWidth = 280 }: NavbarProps) {
+export default function Navbar({ user }: NavbarProps) {
   const router = useRouter();
   const supabase = createClient();
   const { theme, setTheme } = useTheme();
@@ -66,35 +64,7 @@ export default function Navbar({ user, onToggleSidebar, sidebarOpen, sidebarWidt
     <>
       <header className="h-12 border-b border-[#E8EAED] dark:border-[#30363d] bg-white dark:bg-[#161B22] flex items-center px-3 gap-2 shrink-0 z-20">
 
-        {/* Left: synced to sidebar width */}
-        <div
-          className="flex items-center gap-1 shrink-0 overflow-hidden transition-[width] duration-75"
-          style={{ width: sidebarOpen ? sidebarWidth - 12 : "auto" }}
-        >
-          <button className="h-8 w-8 flex items-center justify-center rounded hover:bg-[#F1F2F4] dark:hover:bg-[#21262d] transition-colors shrink-0">
-            <LayoutGrid className="h-4 w-4 text-[#42526E] dark:text-slate-400" />
-          </button>
-          <Link href="/home" className="flex items-center gap-1.5 shrink-0">
-            <div className="h-6 w-6 bg-[#0052CC] rounded flex items-center justify-center shrink-0">
-              <BookOpen className="h-3.5 w-3.5 text-white" strokeWidth={2.5} />
-            </div>
-            {!sidebarOpen && (
-              <span className="font-semibold text-[#172B4D] dark:text-white text-sm">Confluence</span>
-            )}
-          </Link>
-          <button
-            onClick={onToggleSidebar}
-            className="h-8 w-8 flex items-center justify-center rounded hover:bg-[#F1F2F4] dark:hover:bg-[#21262d] transition-colors ml-auto shrink-0"
-            title={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
-          >
-            <svg viewBox="0 0 20 20" className="h-4 w-4 text-[#42526E] dark:text-slate-400" fill="none" stroke="currentColor" strokeWidth="1.6">
-              <rect x="3" y="4" width="14" height="12" rx="1.5" />
-              <line x1="7" y1="4" x2="7" y2="16" />
-            </svg>
-          </button>
-        </div>
-
-        {/* Search — center */}
+        {/* Search — fills remaining space */}
         <button
           onClick={() => setSearchOpen(true)}
           className="flex-1 max-w-2xl mx-auto flex items-center gap-2 px-3 h-9 rounded-md bg-[#F1F2F4] dark:bg-[#21262d] hover:bg-[#E8EAED] dark:hover:bg-[#30363d] text-[#6B778C] dark:text-slate-400 text-sm transition-colors border border-transparent hover:border-[#DFE1E6] dark:hover:border-[#444]"
