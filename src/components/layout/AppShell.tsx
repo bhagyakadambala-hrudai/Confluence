@@ -43,44 +43,46 @@ export default function AppShell({ user, children }: AppShellProps) {
   }, [sidebarWidth]);
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-white dark:bg-[#161B22]">
-      <Navbar
-        user={user}
-        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-        sidebarOpen={sidebarOpen}
-      />
-      <div className="flex flex-1 min-h-0 overflow-hidden relative">
-        {sidebarOpen && (
-          <>
-            <Sidebar
-              open={sidebarOpen}
-              onToggle={() => setSidebarOpen(false)}
-              user={user}
-              width={sidebarWidth}
-            />
-            {/* Resize handle */}
-            <div
-              onMouseDown={startResize}
-              className="w-1 shrink-0 cursor-col-resize hover:bg-[#0052CC]/40 active:bg-[#0052CC]/60 transition-colors z-30 group"
-              title="Drag to resize"
-            >
-              <div className="w-px h-full bg-[#E8EAED] dark:bg-[#30363d] group-hover:bg-[#0052CC]/40 transition-colors" />
-            </div>
-          </>
-        )}
+    <div className="h-screen overflow-hidden bg-white dark:bg-[#161B22] flex">
+
+      {/* Sidebar — full height, left column */}
+      {sidebarOpen && (
+        <>
+          <Sidebar
+            open={sidebarOpen}
+            onToggle={() => setSidebarOpen(false)}
+            user={user}
+            width={sidebarWidth}
+          />
+          {/* Resize handle */}
+          <div
+            onMouseDown={startResize}
+            className="w-1 shrink-0 cursor-col-resize hover:bg-[#0052CC]/40 active:bg-[#0052CC]/60 transition-colors z-30 group"
+          >
+            <div className="w-px h-full bg-[#E8EAED] dark:bg-[#30363d] group-hover:bg-[#0052CC]/40 transition-colors" />
+          </div>
+        </>
+      )}
+
+      {/* Right column — navbar + main content */}
+      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+        <Navbar
+          user={user}
+          onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+          sidebarOpen={sidebarOpen}
+        />
 
         {/* Collapsed sidebar toggle */}
         {!sidebarOpen && (
           <button
             onClick={() => setSidebarOpen(true)}
-            className="absolute left-0 z-20 h-8 w-6 flex items-center justify-center bg-white dark:bg-[#161B22] border border-l-0 border-[#E8EAED] dark:border-[#30363d] rounded-r-md shadow-sm hover:bg-[#F1F2F4] dark:hover:bg-[#21262d] transition-colors"
-            style={{ top: "calc(50% + 24px)" }}
+            className="absolute left-0 top-1/2 z-20 h-8 w-6 flex items-center justify-center bg-white dark:bg-[#161B22] border border-l-0 border-[#E8EAED] dark:border-[#30363d] rounded-r-md shadow-sm hover:bg-[#F1F2F4] dark:hover:bg-[#21262d] transition-colors"
           >
             <PanelLeftOpen className="h-3.5 w-3.5 text-[#6B778C]" />
           </button>
         )}
 
-        <main className="flex-1 min-w-0 overflow-y-auto bg-white dark:bg-[#161B22]">
+        <main className="flex-1 min-h-0 overflow-y-auto bg-white dark:bg-[#161B22]">
           {children}
         </main>
       </div>
