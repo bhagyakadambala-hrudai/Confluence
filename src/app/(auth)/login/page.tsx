@@ -8,7 +8,67 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { BookOpen, Loader2 } from "lucide-react";
+import { BookOpen, Loader2, FileText, Users, LayoutGrid, CheckCircle2 } from "lucide-react";
+
+function LeftPanel() {
+  return (
+    <div className="hidden lg:flex w-[52%] min-h-screen bg-[#0052CC] flex-col relative overflow-hidden">
+      {/* Background decorations */}
+      <div className="absolute top-0 right-0 w-72 h-72 bg-[#0065FF] rounded-full opacity-30 -translate-y-1/3 translate-x-1/3" />
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-[#003E9C] rounded-full opacity-40 translate-y-1/3 -translate-x-1/4" />
+      <div className="absolute top-1/2 left-1/2 w-48 h-48 bg-[#0747A6] rounded-full opacity-20 -translate-x-1/2 -translate-y-1/2" />
+
+      <div className="relative z-10 flex flex-col h-full px-12 py-12">
+        {/* Logo */}
+        <div className="flex items-center gap-3 mb-16">
+          <div className="h-10 w-10 bg-white rounded-lg flex items-center justify-center shadow-md">
+            <BookOpen className="h-6 w-6 text-[#0052CC]" />
+          </div>
+          <span className="text-2xl font-bold text-white tracking-tight">Confluence</span>
+        </div>
+
+        {/* Headline */}
+        <div className="mb-10">
+          <h1 className="text-4xl font-bold text-white leading-tight mb-4">
+            Your team&apos;s knowledge base
+          </h1>
+          <p className="text-blue-200 text-lg leading-relaxed max-w-sm">
+            Create, organize and collaborate on documents, meeting notes, and everything your team needs — in one place.
+          </p>
+        </div>
+
+        {/* Feature highlights */}
+        <div className="space-y-4 mb-10">
+          {[
+            { icon: FileText, title: "Pages", desc: "Draft, edit, and publish rich docs with your team" },
+            { icon: LayoutGrid, title: "Spaces", desc: "Organize knowledge by team, project, or topic" },
+            { icon: Users, title: "Teams", desc: "Collaborate and share access with your colleagues" },
+          ].map(({ icon: Icon, title, desc }) => (
+            <div key={title} className="flex items-start gap-4 bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3.5 border border-white/10">
+              <div className="h-8 w-8 bg-white/20 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
+                <Icon className="h-4 w-4 text-white" />
+              </div>
+              <div>
+                <p className="text-white font-semibold text-sm">{title}</p>
+                <p className="text-blue-200 text-xs mt-0.5 leading-relaxed">{desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Trust badges */}
+        <div className="mt-auto flex items-center gap-6 text-blue-200 text-xs">
+          {["Secure & private", "Real-time collaboration", "Always in sync"].map((t) => (
+            <span key={t} className="flex items-center gap-1.5">
+              <CheckCircle2 className="h-3.5 w-3.5 text-green-400 shrink-0" />
+              {t}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -56,54 +116,39 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex bg-[#F4F5F7]">
-      {/* Left panel */}
-      <div className="hidden lg:flex w-1/2 bg-[#0052CC] items-center justify-center p-12">
-        <div className="text-white max-w-md">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="h-10 w-10 bg-white rounded-lg flex items-center justify-center">
-              <BookOpen className="h-6 w-6 text-[#0052CC]" />
-            </div>
-            <span className="text-2xl font-bold">Confluence</span>
-          </div>
-          <h2 className="text-3xl font-bold mb-4 leading-tight">
-            Your team's knowledge base
-          </h2>
-          <p className="text-blue-200 text-lg leading-relaxed">
-            Create, organize and collaborate on documents, meeting notes, and everything your team needs — in one place.
-          </p>
-        </div>
-      </div>
+    <div className="min-h-screen flex">
+      <LeftPanel />
 
       {/* Right panel */}
-      <div className="flex-1 flex items-center justify-center p-8">
+      <div className="flex-1 flex items-center justify-center bg-[#F4F5F7] p-8">
         <div className="w-full max-w-sm">
+          {/* Mobile logo */}
           <div className="lg:hidden flex items-center gap-2 justify-center mb-8">
-            <div className="h-8 w-8 bg-[#0052CC] rounded flex items-center justify-center">
+            <div className="h-8 w-8 bg-[#0052CC] rounded-lg flex items-center justify-center">
               <BookOpen className="h-5 w-5 text-white" />
             </div>
             <span className="text-xl font-bold text-[#172B4D]">Confluence</span>
           </div>
 
-          <h1 className="text-2xl font-bold text-[#172B4D] mb-2">Log in to your account</h1>
+          <h2 className="text-2xl font-bold text-[#172B4D] mb-1.5">Log in to your account</h2>
           <p className="text-[#6B778C] text-sm mb-8">
             Don&apos;t have an account?{" "}
             <Link href="/signup" className="text-[#0052CC] hover:underline font-medium">Sign up for free</Link>
           </p>
 
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleLogin} className="space-y-5">
             <div>
               <Label htmlFor="email" className="text-[#172B4D] font-medium text-sm">Email</Label>
               <Input
                 id="email" type="email" value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter email"
-                className={`mt-1.5 h-10 border-[#DFE1E6] focus-visible:ring-[#0052CC] ${errors.email ? "border-red-500" : ""}`}
+                className={`mt-1.5 h-11 bg-white border-[#DFE1E6] focus-visible:ring-[#0052CC] text-sm ${errors.email ? "border-red-500" : ""}`}
               />
               {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
             </div>
             <div>
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center mb-1.5">
                 <Label htmlFor="password" className="text-[#172B4D] font-medium text-sm">Password</Label>
                 <button type="button" onClick={handleForgot} className="text-xs text-[#0052CC] hover:underline">
                   Forgot password?
@@ -113,17 +158,21 @@ export default function LoginPage() {
                 id="password" type="password" value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter password"
-                className={`mt-1.5 h-10 border-[#DFE1E6] focus-visible:ring-[#0052CC] ${errors.password ? "border-red-500" : ""}`}
+                className={`h-11 bg-white border-[#DFE1E6] focus-visible:ring-[#0052CC] text-sm ${errors.password ? "border-red-500" : ""}`}
               />
               {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
             </div>
-            <Button type="submit" disabled={loading} className="w-full h-10 bg-[#0052CC] hover:bg-[#0065FF] text-white font-semibold">
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full h-11 bg-[#0052CC] hover:bg-[#0065FF] text-white font-semibold text-sm rounded-md"
+            >
               {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
               Log in
             </Button>
           </form>
 
-          <div className="relative my-5">
+          <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-[#DFE1E6]" />
             </div>
@@ -135,7 +184,7 @@ export default function LoginPage() {
           <button
             type="button"
             onClick={handleGoogle}
-            className="w-full flex items-center justify-center gap-3 h-10 border border-[#DFE1E6] rounded-md bg-white hover:bg-[#F4F5F7] text-[#172B4D] text-sm font-medium transition-colors"
+            className="w-full flex items-center justify-center gap-3 h-11 border border-[#DFE1E6] rounded-md bg-white hover:bg-[#F4F5F7] text-[#172B4D] text-sm font-medium transition-colors shadow-sm"
           >
             <svg className="h-4 w-4" viewBox="0 0 24 24">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
