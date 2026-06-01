@@ -292,8 +292,13 @@ export default function Sidebar({ open, onToggle, user, width = 280 }: SidebarPr
               )}
               <Link
                 href="/spaces"
-                className="flex items-center gap-2 text-xs text-[#42526E] dark:text-slate-400 hover:text-[#0052CC] dark:hover:text-blue-400 transition-colors py-1 px-1"
+                className="flex items-center gap-3 px-3 py-2 text-sm text-[#172B4D] dark:text-slate-300 hover:bg-[#F1F2F4] dark:hover:bg-[#21262d] rounded transition-colors"
               >
+                <svg viewBox="0 0 16 16" className="h-4 w-4 text-[#42526E] dark:text-slate-400 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.6">
+                  <line x1="2" y1="4" x2="14" y2="4" strokeLinecap="round" />
+                  <line x1="2" y1="8" x2="14" y2="8" strokeLinecap="round" />
+                  <line x1="2" y1="12" x2="9" y2="12" strokeLinecap="round" />
+                </svg>
                 View all spaces
               </Link>
             </div>
