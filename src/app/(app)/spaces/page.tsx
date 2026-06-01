@@ -23,7 +23,7 @@ interface Space {
   created_at: string;
 }
 
-const FILTER_TABS = ["All", "Watching", "Starred", "Communal", "Personal", "Archived"] as const;
+const FILTER_TABS = ["All", "Watching", "Starred", "Communal", "Personal", "Archived", "Trashed"] as const;
 type FilterTab = (typeof FILTER_TABS)[number];
 
 export default function SpacesPage() {
@@ -89,7 +89,15 @@ export default function SpacesPage() {
       <div className="max-w-5xl mx-auto px-8 py-8">
 
         {/* Header */}
-        <h1 className="text-2xl font-bold text-[#172B4D] dark:text-white mb-6">Spaces</h1>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold text-[#172B4D] dark:text-white">Spaces</h1>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="px-4 py-2 text-sm font-medium text-[#172B4D] dark:text-slate-200 border border-[#DFE1E6] dark:border-slate-600 rounded hover:bg-[#F4F5F7] dark:hover:bg-slate-700 transition-colors"
+          >
+            Create a space
+          </button>
+        </div>
 
         {/* Your spaces */}
         <section className="mb-8">
@@ -175,7 +183,7 @@ export default function SpacesPage() {
                   className="flex items-center gap-3 px-4 py-3 hover:bg-[#F8F9FF] dark:hover:bg-slate-700/30 transition-colors group bg-white dark:bg-transparent"
                 >
                   <Link href={`/spaces/${space.id}`} className="flex items-center gap-3 flex-1 min-w-0">
-                    <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-[#6554C0] to-[#0052CC] flex items-center justify-center shrink-0 text-xl leading-none shadow-sm">
+                    <div className="h-10 w-10 rounded-lg bg-[#6554C0] flex items-center justify-center shrink-0 text-xl leading-none">
                       {space.emoji || "📁"}
                     </div>
                     <div className="min-w-0">
@@ -191,7 +199,7 @@ export default function SpacesPage() {
                   </span>
 
                   {/* Actions */}
-                  <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex items-center gap-1 shrink-0">
                     <button
                       onClick={() => toast("Watch feature coming soon")}
                       className="h-8 w-8 flex items-center justify-center rounded hover:bg-[#EBECF0] dark:hover:bg-slate-600 transition-colors"
@@ -254,8 +262,8 @@ function SpaceCard({ space }: { space: Space }) {
       className="flex flex-col w-[152px] h-[152px] rounded-lg border border-[#DFE1E6] dark:border-slate-700 overflow-hidden hover:shadow-md hover:border-[#0052CC]/30 transition-all group bg-white dark:bg-[#1e2d3d]"
     >
       {/* Icon area */}
-      <div className="flex-1 w-full flex items-center justify-center bg-[#F4F5F7] dark:bg-slate-700/50 group-hover:bg-[#EBF0FF] dark:group-hover:bg-slate-700 transition-colors">
-        <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-[#6554C0] to-[#0052CC] flex items-center justify-center text-3xl shadow-md">
+      <div className="flex-1 w-full flex items-center justify-center bg-[#F4F5F7] dark:bg-slate-700/50 group-hover:bg-[#EBECF0] dark:group-hover:bg-slate-700 transition-colors">
+        <div className="h-16 w-16 rounded-2xl bg-[#6554C0] flex items-center justify-center text-3xl shadow-md">
           {space.emoji || "📁"}
         </div>
       </div>
