@@ -57,6 +57,7 @@ export default function Sidebar({ open, onToggle, user }: SidebarProps) {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [showCreatePopup, setShowCreatePopup] = useState(false);
   const [spaceStarred, setSpaceStarred] = useState(false);
+  const [showMore, setShowMore] = useState(false);
   const createPopupRef = useRef<HTMLDivElement>(null);
 
   type FlyoutPanel = "recent" | "starred" | "spaces" | null;
@@ -81,6 +82,9 @@ export default function Sidebar({ open, onToggle, user }: SidebarProps) {
 
   useEffect(() => {
     fetchSpaces();
+    fetch("/api/stars")
+      .then((r) => r.ok ? r.json() : { spaces: [] })
+      .then((data) => setStarredSpaces(data.spaces || []));
   }, []);
 
   useEffect(() => {
@@ -240,47 +244,36 @@ export default function Sidebar({ open, onToggle, user }: SidebarProps) {
             <NavItem icon={<Layers className="h-4 w-4" />} label="Apps" href="#" />
           </nav>
 
-          {/* ── Spaces inline expansion ── */}
-          {flyout === "spaces" && (
-            <div className="pb-2">
-              <div className="px-4 pt-2 pb-1">
-                <p className="text-xs font-semibold text-[#6B778C] dark:text-slate-400 uppercase tracking-wide mb-2">
-                  Starred spaces
-                </p>
-                {starredSpaces.length === 0 ? (
-                  <p className="text-xs text-[#97A0AF] dark:text-slate-500 mb-3">
-                    Spaces you star will appear here
-                  </p>
-                ) : (
-                  <div className="space-y-0.5 mb-2">
-                    {starredSpaces.map((s) => (
-                      <Link
-                        key={s.id}
-                        href={`/spaces/${s.id}`}
-                        onClick={() => setFlyout(null)}
-                        className="flex items-center gap-2 px-2 py-1.5 rounded text-sm text-[#172B4D] dark:text-slate-300 hover:bg-[#F1F2F4] dark:hover:bg-[#21262d] transition-colors"
-                      >
-                        <span className="text-base leading-none">{s.emoji || "📁"}</span>
-                        <span className="truncate text-xs font-medium">{s.name}</span>
-                      </Link>
-                    ))}
-                  </div>
-                )}
-                <Link
-                  href="/spaces"
-                  onClick={() => setFlyout(null)}
-                  className="flex items-center gap-2 text-sm text-[#172B4D] dark:text-slate-300 hover:text-[#0052CC] dark:hover:text-blue-400 transition-colors py-1"
-                >
-                  <svg viewBox="0 0 16 16" className="h-4 w-4 text-[#42526E]" fill="none" stroke="currentColor" strokeWidth="1.6">
-                    <line x1="2" y1="4" x2="14" y2="4" strokeLinecap="round" />
-                    <line x1="2" y1="8" x2="14" y2="8" strokeLinecap="round" />
-                    <line x1="2" y1="12" x2="9" y2="12" strokeLinecap="round" />
-                  </svg>
-                  View all spaces
-                </Link>
+          {/* ── Starred spaces (always visible) ── */}
+          <div className="px-3 pt-3 pb-2">
+            <p className="text-xs font-semibold text-[#6B778C] dark:text-slate-400 uppercase tracking-wide mb-1.5 px-1">
+              Starred spaces
+            </p>
+            {starredSpaces.length === 0 ? (
+              <p className="text-xs text-[#97A0AF] dark:text-slate-500 px-1 mb-2">
+                Spaces you star will appear here
+              </p>
+            ) : (
+              <div className="space-y-0.5 mb-1">
+                {starredSpaces.map((s) => (
+                  <Link
+                    key={s.id}
+                    href={`/spaces/${s.id}`}
+                    className="flex items-center gap-2 px-2 py-1.5 rounded text-sm text-[#172B4D] dark:text-slate-300 hover:bg-[#F1F2F4] dark:hover:bg-[#21262d] transition-colors"
+                  >
+                    <span className="text-base leading-none">{s.emoji || "📁"}</span>
+                    <span className="truncate text-xs font-medium">{s.name}</span>
+                  </Link>
+                ))}
               </div>
-            </div>
-          )}
+            )}
+            <Link
+              href="/spaces"
+              className="flex items-center gap-2 text-xs text-[#42526E] dark:text-slate-400 hover:text-[#0052CC] dark:hover:text-blue-400 transition-colors py-1 px-1"
+            >
+              View all spaces
+            </Link>
+          </div>
 
           {/* ── Divider ── */}
           <div className="h-px bg-[#E8EAED] dark:bg-[#30363d] mx-0 my-1" />
@@ -468,9 +461,25 @@ export default function Sidebar({ open, onToggle, user }: SidebarProps) {
 
           {/* ── Bottom links ── */}
           <nav className="py-1">
-            <BottomLink icon={<Building2 className="h-4 w-4" />} label="Company hub" />
-            <BottomLink icon={<Users className="h-4 w-4" />} label="Teams" href="/teams" />
-            <BottomLink icon={<More className="h-4 w-4" />} label="More" />
+            <BottomLink icon={<Building2 className="h-4 w-4" />} label="Company hub" showExternal />
+            <BottomLink icon={<Users className="h-4 w-4" />} label="Teams" href="/teams" showExternal />
+            <div>
+              <div
+                onClick={() => setShowMore((v) => !v)}
+                className="flex items-center gap-3 px-3 py-2 text-sm text-[#172B4D] dark:text-slate-300 hover:bg-[#F1F2F4] dark:hover:bg-[#21262d] cursor-pointer transition-colors"
+              >
+                <span className="text-[#6B778C] dark:text-slate-400 shrink-0"><More className="h-4 w-4" /></span>
+                <span className="flex-1">More</span>
+                <ChevronRight className={cn("h-3.5 w-3.5 text-[#6B778C] transition-transform", showMore && "rotate-90")} />
+              </div>
+              {showMore && (
+                <div className="pl-4 pb-1">
+                  <BottomLink icon={<FileText className="h-4 w-4" />} label="Drafts" href="#" />
+                  <BottomLink icon={<svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6"><rect x="2" y="3" width="12" height="10" rx="1.5"/><line x1="5" y1="7" x2="11" y2="7" strokeLinecap="round"/><line x1="5" y1="10" x2="8" y2="10" strokeLinecap="round"/></svg>} label="Tasks" href="#" />
+                  <BottomLink icon={<Settings className="h-4 w-4" />} label="Customize sidebar" href="#" />
+                </div>
+              )}
+            </div>
           </nav>
         </ScrollArea>
 
@@ -725,23 +734,23 @@ function NavItem({ icon, label, href, active, hasChevron, expanded, onToggle }: 
   return <Link href={href}>{content}</Link>;
 }
 
-function BottomLink({ icon, label, href }: { icon: React.ReactNode; label: string; href?: string }) {
+function BottomLink({ icon, label, href, showExternal }: { icon: React.ReactNode; label: string; href?: string; showExternal?: boolean }) {
   const inner = (
     <>
       <span className="text-[#6B778C] dark:text-slate-400 shrink-0">{icon}</span>
       <span className="flex-1">{label}</span>
-      <ExternalLink className="h-3.5 w-3.5 text-[#6B778C] opacity-0 group-hover:opacity-100 transition-opacity" />
+      {showExternal && <ExternalLink className="h-3.5 w-3.5 text-[#6B778C] shrink-0" />}
     </>
   );
-  if (href) {
+  if (href && href !== "#") {
     return (
-      <Link href={href} className="flex items-center gap-3 px-3 py-2 text-sm text-[#172B4D] dark:text-slate-300 hover:bg-[#F1F2F4] dark:hover:bg-[#21262d] transition-colors group">
+      <Link href={href} className="flex items-center gap-3 px-3 py-2 text-sm text-[#172B4D] dark:text-slate-300 hover:bg-[#F1F2F4] dark:hover:bg-[#21262d] transition-colors">
         {inner}
       </Link>
     );
   }
   return (
-    <div className="flex items-center gap-3 px-3 py-2 text-sm text-[#172B4D] dark:text-slate-300 hover:bg-[#F1F2F4] dark:hover:bg-[#21262d] cursor-pointer transition-colors group">
+    <div className="flex items-center gap-3 px-3 py-2 text-sm text-[#172B4D] dark:text-slate-300 hover:bg-[#F1F2F4] dark:hover:bg-[#21262d] cursor-pointer transition-colors">
       {inner}
     </div>
   );
