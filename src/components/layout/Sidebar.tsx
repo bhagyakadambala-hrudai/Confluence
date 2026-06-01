@@ -491,32 +491,7 @@ export default function Sidebar({ open, onToggle, user, width = 280 }: SidebarPr
                 <span className="text-[10px] bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 px-1.5 py-0.5 rounded font-semibold">PREMIUM</span>
               </div>
             </div>
-          ) : (
-            /* No active space — show all spaces */
-            <div className="py-2 px-2">
-              <div className="flex items-center justify-between px-2 mb-2">
-                <span className="text-xs font-semibold text-[#6B778C] uppercase tracking-wider">Spaces</span>
-                <button onClick={() => setCreateModalOpen(true)}
-                  className="h-5 w-5 flex items-center justify-center rounded hover:bg-[#F1F2F4] transition-colors">
-                  <Plus className="h-3.5 w-3.5 text-[#6B778C]" />
-                </button>
-              </div>
-              {spaces.length === 0 ? (
-                <div className="px-2 py-4 text-center">
-                  <p className="text-xs text-[#6B778C]">No spaces yet</p>
-                  <button onClick={() => setCreateModalOpen(true)} className="text-xs text-[#0052CC] hover:underline mt-1">Create one</button>
-                </div>
-              ) : (
-                spaces.map((s) => (
-                  <Link key={s.id} href={`/spaces/${s.id}`}
-                    className="flex items-center gap-2.5 px-2 py-2 rounded text-sm text-[#172B4D] dark:text-slate-300 hover:bg-[#F1F2F4] dark:hover:bg-[#21262d] transition-colors">
-                    <span className="text-lg leading-none">{s.emoji}</span>
-                    <span className="truncate font-medium">{s.name}</span>
-                  </Link>
-                ))
-              )}
-            </div>
-          )}
+          ) : null}
 
           {/* ── Divider ── */}
           <div className="h-px bg-[#E8EAED] dark:bg-[#30363d] mx-0 my-1" />
