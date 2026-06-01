@@ -248,36 +248,38 @@ export default function Sidebar({ open, onToggle, user, width = 280 }: SidebarPr
             <NavItem icon={<Layers className="h-4 w-4" />} label="Apps" href="#" />
           </nav>
 
-          {/* ── Starred spaces (always visible) ── */}
-          <div className="px-3 pt-3 pb-2">
-            <p className="text-xs font-semibold text-[#6B778C] dark:text-slate-400 uppercase tracking-wide mb-1.5 px-1">
-              Starred spaces
-            </p>
-            {starredSpaces.length === 0 ? (
-              <p className="text-xs text-[#97A0AF] dark:text-slate-500 px-1 mb-2">
-                Spaces you star will appear here
+          {/* ── Starred spaces (only when NOT in a space) ── */}
+          {!activeSpace && (
+            <div className="px-3 pt-3 pb-2">
+              <p className="text-xs font-semibold text-[#6B778C] dark:text-slate-400 uppercase tracking-wide mb-1.5 px-1">
+                Starred spaces
               </p>
-            ) : (
-              <div className="space-y-0.5 mb-1">
-                {starredSpaces.map((s) => (
-                  <Link
-                    key={s.id}
-                    href={`/spaces/${s.id}`}
-                    className="flex items-center gap-2 px-2 py-1.5 rounded text-sm text-[#172B4D] dark:text-slate-300 hover:bg-[#F1F2F4] dark:hover:bg-[#21262d] transition-colors"
-                  >
-                    <span className="text-base leading-none">{s.emoji || "📁"}</span>
-                    <span className="truncate text-xs font-medium">{s.name}</span>
-                  </Link>
-                ))}
-              </div>
-            )}
-            <Link
-              href="/spaces"
-              className="flex items-center gap-2 text-xs text-[#42526E] dark:text-slate-400 hover:text-[#0052CC] dark:hover:text-blue-400 transition-colors py-1 px-1"
-            >
-              View all spaces
-            </Link>
-          </div>
+              {starredSpaces.length === 0 ? (
+                <p className="text-xs text-[#97A0AF] dark:text-slate-500 px-1 mb-2">
+                  Spaces you star will appear here
+                </p>
+              ) : (
+                <div className="space-y-0.5 mb-1">
+                  {starredSpaces.map((s) => (
+                    <Link
+                      key={s.id}
+                      href={`/spaces/${s.id}`}
+                      className="flex items-center gap-2 px-2 py-1.5 rounded text-sm text-[#172B4D] dark:text-slate-300 hover:bg-[#F1F2F4] dark:hover:bg-[#21262d] transition-colors"
+                    >
+                      <span className="text-base leading-none">{s.emoji || "📁"}</span>
+                      <span className="truncate text-xs font-medium">{s.name}</span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+              <Link
+                href="/spaces"
+                className="flex items-center gap-2 text-xs text-[#42526E] dark:text-slate-400 hover:text-[#0052CC] dark:hover:text-blue-400 transition-colors py-1 px-1"
+              >
+                View all spaces
+              </Link>
+            </div>
+          )}
 
           {/* ── Divider ── */}
           <div className="h-px bg-[#E8EAED] dark:bg-[#30363d] mx-0 my-1" />
@@ -287,8 +289,8 @@ export default function Sidebar({ open, onToggle, user, width = 280 }: SidebarPr
             <div className="py-1">
               {/* Space header row */}
               <div className="flex items-center gap-2 px-3 py-2 group/space">
-                <div className="h-7 w-7 rounded-md flex items-center justify-center shrink-0 text-base leading-none">
-                  {activeSpace.emoji || "📁"}
+                <div className="h-7 w-7 rounded-md flex items-center justify-center shrink-0 text-base leading-none bg-gradient-to-br from-[#6554C0] to-[#0052CC] shadow-sm">
+                  <span className="text-sm leading-none">{activeSpace.emoji || "📁"}</span>
                 </div>
                 <Link href={`/spaces/${activeSpace.id}`}
                   className="flex-1 min-w-0 font-semibold text-sm text-[#172B4D] dark:text-white truncate hover:text-[#0052CC]">
@@ -350,9 +352,30 @@ export default function Sidebar({ open, onToggle, user, width = 280 }: SidebarPr
                 </DropdownMenu>
               </div>
 
+              {/* Shortcuts section */}
+              <div className="px-3 py-1">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-1.5">
+                    <Link2 className="h-3.5 w-3.5 text-[#6B778C]" />
+                    <span className="text-xs font-semibold text-[#6B778C] dark:text-slate-400">Shortcuts</span>
+                  </div>
+                  <button className="h-5 w-5 flex items-center justify-center rounded hover:bg-[#F1F2F4] dark:hover:bg-[#21262d] transition-colors">
+                    <Plus className="h-3 w-3 text-[#6B778C]" />
+                  </button>
+                </div>
+                <p className="text-xs text-[#97A0AF] dark:text-slate-500 pl-5">No shortcuts in this space</p>
+              </div>
+
               {/* Content header */}
-              <div className="flex items-center justify-between px-3 py-1">
-                <span className="text-xs font-semibold text-[#6B778C] dark:text-slate-400 uppercase tracking-wider">Content</span>
+              <div className="flex items-center justify-between px-3 py-1 mt-2">
+                <div className="flex items-center gap-1.5">
+                  <svg viewBox="0 0 16 16" className="h-3.5 w-3.5 text-[#6B778C]" fill="none" stroke="currentColor" strokeWidth="1.6">
+                    <rect x="2" y="2" width="12" height="12" rx="1.5" />
+                    <line x1="5" y1="6" x2="11" y2="6" strokeLinecap="round" />
+                    <line x1="5" y1="9" x2="9" y2="9" strokeLinecap="round" />
+                  </svg>
+                  <span className="text-xs font-semibold text-[#6B778C] dark:text-slate-400">Content</span>
+                </div>
                 <div className="flex items-center gap-0.5">
                   <button onClick={() => createPage()}
                     className="h-6 w-6 flex items-center justify-center rounded hover:bg-[#F1F2F4] dark:hover:bg-[#21262d] transition-colors">
@@ -431,6 +454,18 @@ export default function Sidebar({ open, onToggle, user, width = 280 }: SidebarPr
                     />
                   </div>
                 )}
+              </div>
+
+              {/* Calendars */}
+              <div className="flex items-center gap-2 px-3 py-2 text-sm text-[#6B778C] dark:text-slate-400 cursor-default select-none">
+                <svg viewBox="0 0 16 16" className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.6">
+                  <rect x="2" y="3" width="12" height="11" rx="1.5" />
+                  <line x1="2" y1="7" x2="14" y2="7" strokeLinecap="round" />
+                  <line x1="5" y1="1" x2="5" y2="5" strokeLinecap="round" />
+                  <line x1="11" y1="1" x2="11" y2="5" strokeLinecap="round" />
+                </svg>
+                <span className="flex-1 text-sm text-[#172B4D] dark:text-slate-300">Calendars</span>
+                <span className="text-[10px] bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 px-1.5 py-0.5 rounded font-semibold">PREMIUM</span>
               </div>
             </div>
           ) : (
