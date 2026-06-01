@@ -11,7 +11,7 @@ interface BreadcrumbProps {
 export default function Breadcrumb({ space, parentPage, currentPage, spaceId }: BreadcrumbProps) {
   return (
     <nav className="flex items-center gap-1 text-sm text-muted-foreground min-w-0">
-      <Link href="/" className="hover:text-foreground shrink-0">
+      <Link href="/home" className="hover:text-foreground shrink-0">
         <Home className="h-3.5 w-3.5" />
       </Link>
       {space && (

@@ -210,7 +210,7 @@ export default function Sidebar({ open, onToggle, user }: SidebarProps) {
             <button className="h-8 w-8 flex items-center justify-center rounded hover:bg-[#F1F2F4] dark:hover:bg-[#21262d] transition-colors">
               <LayoutGrid className="h-4.5 w-4.5 text-[#42526E] dark:text-slate-400" strokeWidth={1.8} />
             </button>
-            <Link href="/" className="flex items-center gap-1.5">
+            <Link href="/home" className="flex items-center gap-1.5">
               <div className="h-6 w-6 bg-[#0052CC] rounded flex items-center justify-center">
                 <BookOpen className="h-3.5 w-3.5 text-white" strokeWidth={2.5} />
               </div>
@@ -228,7 +228,7 @@ export default function Sidebar({ open, onToggle, user }: SidebarProps) {
         <ScrollArea className="flex-1">
           {/* ── Global nav ── */}
           <nav className="py-1">
-            <NavItem icon={<ForYouIcon />} label="For you" href="/" active={pathname === "/"} />
+            <NavItem icon={<ForYouIcon />} label="For you" href="/home" active={pathname === "/home"} />
             <NavItem icon={<TemplatesIcon />} label="Templates" href="/templates" active={pathname === "/templates"} />
             <NavItem icon={<Clock className="h-4 w-4" />} label="Recent" href="#" hasChevron
               expanded={flyout === "recent"} onToggle={() => toggleFlyout("recent")} active={flyout === "recent"} />

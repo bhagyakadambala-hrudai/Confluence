@@ -68,7 +68,7 @@ export default function Navbar({ user, onToggleSidebar }: NavbarProps) {
     <>
       <header className="h-12 border-b border-border bg-[#0052CC] dark:bg-slate-900 flex items-center px-3 gap-2 shrink-0 z-20">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-1.5 shrink-0 mr-2">
+        <Link href="/home" className="flex items-center gap-1.5 shrink-0 mr-2">
           <div className="h-6 w-6 bg-white rounded flex items-center justify-center">
             <BookOpen className="h-3.5 w-3.5 text-[#0052CC]" />
           </div>
@@ -77,7 +77,7 @@ export default function Navbar({ user, onToggleSidebar }: NavbarProps) {
 
         {/* Nav links */}
         <nav className="hidden md:flex items-center gap-0.5 mr-2">
-          <Link href="/" className="px-3 py-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded text-sm transition-colors">
+          <Link href="/home" className="px-3 py-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded text-sm transition-colors">
             Home
           </Link>
           <DropdownMenu onOpenChange={(open) => { if (open) setSpaceSearch(""); }}>

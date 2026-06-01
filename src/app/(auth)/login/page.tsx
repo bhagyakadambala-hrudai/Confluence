@@ -95,7 +95,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) toast.error(error.message);
-    else { router.push("/"); router.refresh(); }
+    else { router.push("/home"); router.refresh(); }
   }
 
   async function handleGoogle() {
