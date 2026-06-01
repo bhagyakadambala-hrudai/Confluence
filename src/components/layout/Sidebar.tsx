@@ -43,9 +43,10 @@ interface SidebarProps {
   open: boolean;
   onToggle: () => void;
   user: import("@supabase/supabase-js").User;
+  width?: number;
 }
 
-export default function Sidebar({ open, onToggle, user }: SidebarProps) {
+export default function Sidebar({ open, onToggle, user, width = 280 }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
@@ -206,7 +207,10 @@ export default function Sidebar({ open, onToggle, user }: SidebarProps) {
 
   return (
     <>
-      <aside className="w-[280px] shrink-0 flex flex-col h-full bg-white dark:bg-[#161B22] border-r border-[#E8EAED] dark:border-[#30363d] select-none">
+      <aside
+        className="shrink-0 flex flex-col h-full bg-white dark:bg-[#161B22] select-none overflow-hidden"
+        style={{ width }}
+      >
 
         {/* ── Logo bar ── */}
         <div className="flex items-center justify-between px-3 py-2.5 border-b border-[#E8EAED] dark:border-[#30363d]">
@@ -502,7 +506,7 @@ export default function Sidebar({ open, onToggle, user }: SidebarProps) {
 
       {/* ── Flyout panels ── */}
       {flyout && (
-        <div ref={flyoutRef} className="fixed left-[280px] top-[48px] bottom-0 w-[340px] bg-white dark:bg-[#1B2A3B] border-r border-[#E8EAED] dark:border-[#30363d] shadow-xl z-40 flex flex-col">
+        <div ref={flyoutRef} className="fixed top-[48px] bottom-0 w-[340px] bg-white dark:bg-[#1B2A3B] border-r border-[#E8EAED] dark:border-[#30363d] shadow-xl z-40 flex flex-col" style={{ left: width + 4 }}>
 
           {/* Recent flyout */}
           {flyout === "recent" && (
