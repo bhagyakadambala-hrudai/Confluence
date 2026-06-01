@@ -29,9 +29,10 @@ interface NavbarProps {
   user: User;
   onToggleSidebar: () => void;
   sidebarOpen: boolean;
+  sidebarWidth?: number;
 }
 
-export default function Navbar({ user, onToggleSidebar, sidebarOpen }: NavbarProps) {
+export default function Navbar({ user, onToggleSidebar, sidebarOpen, sidebarWidth = 280 }: NavbarProps) {
   const router = useRouter();
   const supabase = createClient();
   const { theme, setTheme } = useTheme();
@@ -65,20 +66,25 @@ export default function Navbar({ user, onToggleSidebar, sidebarOpen }: NavbarPro
     <>
       <header className="h-12 border-b border-[#E8EAED] dark:border-[#30363d] bg-white dark:bg-[#161B22] flex items-center px-3 gap-2 shrink-0 z-20">
 
-        {/* Left: grid + logo + collapse */}
-        <div className="flex items-center gap-1 shrink-0">
-          <button className="h-8 w-8 flex items-center justify-center rounded hover:bg-[#F1F2F4] dark:hover:bg-[#21262d] transition-colors">
+        {/* Left: synced to sidebar width */}
+        <div
+          className="flex items-center gap-1 shrink-0 overflow-hidden transition-[width] duration-75"
+          style={{ width: sidebarOpen ? sidebarWidth - 12 : "auto" }}
+        >
+          <button className="h-8 w-8 flex items-center justify-center rounded hover:bg-[#F1F2F4] dark:hover:bg-[#21262d] transition-colors shrink-0">
             <LayoutGrid className="h-4 w-4 text-[#42526E] dark:text-slate-400" />
           </button>
-          <Link href="/home" className="flex items-center gap-1.5">
+          <Link href="/home" className="flex items-center gap-1.5 shrink-0">
             <div className="h-6 w-6 bg-[#0052CC] rounded flex items-center justify-center shrink-0">
               <BookOpen className="h-3.5 w-3.5 text-white" strokeWidth={2.5} />
             </div>
-            <span className="font-semibold text-[#172B4D] dark:text-white text-sm hidden sm:block">Confluence</span>
+            {!sidebarOpen && (
+              <span className="font-semibold text-[#172B4D] dark:text-white text-sm">Confluence</span>
+            )}
           </Link>
           <button
             onClick={onToggleSidebar}
-            className="h-8 w-8 flex items-center justify-center rounded hover:bg-[#F1F2F4] dark:hover:bg-[#21262d] transition-colors ml-0.5"
+            className="h-8 w-8 flex items-center justify-center rounded hover:bg-[#F1F2F4] dark:hover:bg-[#21262d] transition-colors ml-auto shrink-0"
             title={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
           >
             <svg viewBox="0 0 20 20" className="h-4 w-4 text-[#42526E] dark:text-slate-400" fill="none" stroke="currentColor" strokeWidth="1.6">

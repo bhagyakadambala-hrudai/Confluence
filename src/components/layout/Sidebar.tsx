@@ -16,9 +16,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   ChevronRight, Plus, MoreHorizontal, Search,
-  LayoutGrid, BookOpen, Clock, Star, Globe, Layers,
+  Clock, Star, Globe, Layers,
   Building2, Users, MoreHorizontal as More,
-  PanelLeftClose, FileText, ExternalLink, X, Filter, Lock,
+  FileText, ExternalLink, X, Filter, Lock,
   Settings, Trash2, Archive, Link2, Copy, Move, Pencil,
   Eye, UserCog, BarChart2, Zap, Folder, AlignLeft,
 } from "lucide-react";
@@ -211,16 +211,6 @@ export default function Sidebar({ open, onToggle, user, width = 280 }: SidebarPr
         className="shrink-0 flex flex-col h-full bg-white dark:bg-[#161B22] select-none overflow-hidden"
         style={{ width }}
       >
-
-        {/* ── Logo bar ── */}
-        <div className="flex items-center justify-between px-3 py-2.5 border-b border-[#E8EAED] dark:border-[#30363d]">
-          <Link href="/home" className="flex items-center gap-1.5">
-            <div className="h-6 w-6 bg-[#0052CC] rounded flex items-center justify-center">
-              <BookOpen className="h-3.5 w-3.5 text-white" strokeWidth={2.5} />
-            </div>
-            <span className="font-semibold text-[#172B4D] dark:text-white text-sm">Confluence</span>
-          </Link>
-        </div>
 
         <ScrollArea className="flex-1">
           {/* ── Global nav ── */}

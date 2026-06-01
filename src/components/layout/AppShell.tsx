@@ -48,6 +48,7 @@ export default function AppShell({ user, children }: AppShellProps) {
         user={user}
         onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
         sidebarOpen={sidebarOpen}
+        sidebarWidth={sidebarOpen ? sidebarWidth : 0}
       />
       <div className="flex flex-1 min-h-0 overflow-hidden relative">
         {sidebarOpen && (
