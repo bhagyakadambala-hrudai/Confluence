@@ -333,63 +333,6 @@ export default function CreateSpaceModal({ open, onClose, onCreated }: CreateSpa
                   </div>
                 </div>
 
-                {/* Purpose */}
-                <div className="mb-6">
-                  <label className="block text-xs font-semibold text-[#172B4D] dark:text-slate-300 mb-2">
-                    Choose a purpose for this space
-                  </label>
-                  <div className="space-y-2">
-                    {PURPOSES.map((p) => (
-                      <button
-                        key={p.id}
-                        onClick={() => setPurpose(p.id)}
-                        className={`w-full text-left px-4 py-3 rounded-lg border transition-all ${
-                          purpose === p.id
-                            ? "border-[#0052CC] bg-white dark:bg-[#0d1117]"
-                            : "border-[#DFE1E6] dark:border-[#30363d] hover:border-[#B3D4FF] dark:hover:border-[#58a6ff]"
-                        }`}
-                      >
-                        <p className="text-sm font-semibold text-[#172B4D] dark:text-white">{p.title}</p>
-                        <p className="text-xs text-[#6B778C] dark:text-slate-400 mt-0.5">{p.description}</p>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Space access */}
-                <div className="mb-4">
-                  <label className="block text-xs font-semibold text-[#172B4D] dark:text-slate-300 mb-2">
-                    Space access
-                  </label>
-                  <div className="relative" ref={accessRef}>
-                    <button
-                      onClick={() => setShowAccessDropdown((v) => !v)}
-                      className="w-full text-left px-4 py-3 rounded-lg border border-[#DFE1E6] dark:border-[#30363d] bg-white dark:bg-[#0d1117] hover:border-[#B3D4FF] transition-colors flex items-center justify-between"
-                    >
-                      <div>
-                        <p className="text-sm font-semibold text-[#172B4D] dark:text-white">{selectedAccess.label}</p>
-                        <p className="text-xs text-[#6B778C] dark:text-slate-400 mt-0.5">{selectedAccess.description}</p>
-                      </div>
-                      <ChevronDown className={`h-4 w-4 text-[#6B778C] transition-transform shrink-0 ml-2 ${showAccessDropdown ? "rotate-180" : ""}`} />
-                    </button>
-                    {showAccessDropdown && (
-                      <div className="absolute left-0 right-0 top-full mt-0.5 bg-white dark:bg-[#1B2A3B] border border-[#DFE1E6] dark:border-[#30363d] rounded-lg shadow-xl z-50 overflow-hidden">
-                        {ACCESS_OPTIONS.map((opt) => (
-                          <button
-                            key={opt.id}
-                            onClick={() => { setAccess(opt.id); setShowAccessDropdown(false); }}
-                            className={`w-full text-left px-4 py-3 hover:bg-[#F4F5F7] dark:hover:bg-[#21262d] transition-colors ${
-                              access === opt.id ? "bg-[#F4F5F7] dark:bg-[#21262d]" : ""
-                            }`}
-                          >
-                            <p className="text-sm font-semibold text-[#172B4D] dark:text-white">{opt.label}</p>
-                            <p className="text-xs text-[#6B778C] dark:text-slate-400 mt-0.5">{opt.description}</p>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
               </>
             ) : (
               /* ── Step 2 ── */
