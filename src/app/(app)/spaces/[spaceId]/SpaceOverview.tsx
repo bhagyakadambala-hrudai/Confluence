@@ -222,7 +222,7 @@ export default function SpaceOverview({
             </Avatar>
           )}
           <Link
-            href={`/spaces/${space.id}/pages/new`}
+            href={`/spaces/${space.id}/edit`}
             className="flex items-center gap-1.5 px-3 h-8 text-sm text-[#172B4D] dark:text-slate-200 border border-[#DFE1E6] dark:border-[#30363d] rounded hover:bg-[#F4F5F7] dark:hover:bg-[#21262d] transition-colors"
           >
             <Edit className="h-3.5 w-3.5" /> Edit
@@ -296,12 +296,21 @@ export default function SpaceOverview({
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-3xl mx-auto px-6 pb-16">
 
-          {/* Description */}
+          {/* Description / rich content */}
           <section className="mb-8">
-            <h2 className="text-lg font-semibold text-[#172B4D] dark:text-white mb-3">Description</h2>
-            <div className="bg-[#F4F5F7] dark:bg-[#21262d] rounded px-4 py-3 text-sm text-[#6B778C] dark:text-slate-400">
-              {space.description || "In a sentence or two, describe the purpose of this space."}
-            </div>
+            {space.description && space.description.startsWith("<") ? (
+              <div
+                className="prose prose-sm dark:prose-invert max-w-none text-[#172B4D] dark:text-slate-200"
+                dangerouslySetInnerHTML={{ __html: space.description }}
+              />
+            ) : (
+              <>
+                <h2 className="text-lg font-semibold text-[#172B4D] dark:text-white mb-3">Description</h2>
+                <div className="bg-[#F4F5F7] dark:bg-[#21262d] rounded px-4 py-3 text-sm text-[#6B778C] dark:text-slate-400">
+                  {space.description || "In a sentence or two, describe the purpose of this space."}
+                </div>
+              </>
+            )}
           </section>
 
           {/* Project Tracker */}
