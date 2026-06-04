@@ -32,6 +32,7 @@ export async function PATCH(
   if (body.description !== undefined) updateData.description = body.description;
   if (body.emoji !== undefined) updateData.emoji = body.emoji;
   if (body.overview_content !== undefined) updateData.overview_content = body.overview_content;
+  if (body.status !== undefined) updateData.status = body.status;
 
   const admin = createAdminClient();
   const { data, error } = await admin
@@ -41,7 +42,12 @@ export async function PATCH(
     .select()
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    const msg = error.message.includes("status")
+      ? "Run the supabase-spaces-status.sql migration in Supabase first"
+      : error.message;
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
   return NextResponse.json(data);
 }
 
