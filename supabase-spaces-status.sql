@@ -10,4 +10,5 @@ CREATE TABLE IF NOT EXISTS public.space_watches (
   UNIQUE(space_id, user_id)
 );
 ALTER TABLE public.space_watches ENABLE ROW LEVEL SECURITY;
-CREATE POLICY IF NOT EXISTS "Users manage own watches" ON space_watches FOR ALL USING (user_id = auth.uid());
+DROP POLICY IF EXISTS "Users manage own watches" ON space_watches;
+CREATE POLICY "Users manage own watches" ON space_watches FOR ALL USING (user_id = auth.uid());
