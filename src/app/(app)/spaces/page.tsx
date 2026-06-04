@@ -33,33 +33,26 @@ export default function SpacesPage() {
   const [starredIds, setStarredIds] = useState<Set<string>>(new Set());
   const [watchedIds, setWatchedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const [tabLoading, setTabLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<FilterTab>("All");
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  useEffect(() => { loadAll(); }, []);
+  useEffect(() => { loadActive(); }, []);
 
-  async function loadAll() {
+  async function loadActive() {
     setLoading(true);
-    const [activeResp, archivedResp, trashedResp, starsResp, watchesResp] = await Promise.all([
+    const [spacesResp, starsResp, watchesResp] = await Promise.all([
       fetch("/api/spaces"),
-      fetch("/api/spaces?status=archived"),
-      fetch("/api/spaces?status=trashed"),
       fetch("/api/stars"),
       fetch("/api/watches"),
     ]);
 
-    const active = activeResp.ok ? await activeResp.json() : [];
-    const archived = archivedResp.ok ? await archivedResp.json() : [];
-    const trashed = trashedResp.ok ? await trashedResp.json() : [];
-
-    const merged = [
-      ...active.map((s: Space) => ({ ...s, status: s.status || "active" })),
-      ...archived.map((s: Space) => ({ ...s, status: "archived" })),
-      ...trashed.map((s: Space) => ({ ...s, status: "trashed" })),
-    ];
-    setAllSpaces(merged);
-
+    if (spacesResp.ok) {
+      const data: Space[] = await spacesResp.json();
+      // Only treat as active — never force-override with archived/trashed
+      setAllSpaces(data.map((s) => ({ ...s, status: s.status || "active" })));
+    }
     if (starsResp.ok) {
       const stars = await starsResp.json();
       setStarredIds(new Set((stars.spaces || []).map((s: { id: string }) => s.id)));
@@ -69,6 +62,30 @@ export default function SpacesPage() {
       setWatchedIds(new Set((watches.spaces || []).map((s: { id: string }) => s.id)));
     }
     setLoading(false);
+  }
+
+  async function loadTabSpaces(status: "archived" | "trashed") {
+    setTabLoading(true);
+    const resp = await fetch(`/api/spaces?status=${status}`);
+    if (resp.ok) {
+      const data: Space[] = await resp.json();
+      // Merge into allSpaces — add new ones, update existing ones' status
+      setAllSpaces((prev) => {
+        const existing = new Map(prev.map((s) => [s.id, s]));
+        data.forEach((s) => existing.set(s.id, { ...s, status }));
+        // Remove spaces of this status that are no longer returned
+        const returnedIds = new Set(data.map((s) => s.id));
+        prev.forEach((s) => { if (s.status === status && !returnedIds.has(s.id)) existing.delete(s.id); });
+        return Array.from(existing.values());
+      });
+    }
+    setTabLoading(false);
+  }
+
+  async function handleTabChange(tab: FilterTab) {
+    setActiveTab(tab);
+    if (tab === "Archived") loadTabSpaces("archived");
+    else if (tab === "Trashed") loadTabSpaces("trashed");
   }
 
   async function toggleStar(spaceId: string) {
@@ -241,7 +258,7 @@ export default function SpacesPage() {
               {FILTER_TABS.map((tab) => (
                 <button
                   key={tab}
-                  onClick={() => setActiveTab(tab)}
+                  onClick={() => handleTabChange(tab)}
                   className={`px-3 py-1.5 text-sm rounded transition-colors ${
                     activeTab === tab
                       ? "bg-[#DEEBFF] dark:bg-blue-900/30 text-[#0052CC] dark:text-blue-400 font-medium"
@@ -255,7 +272,7 @@ export default function SpacesPage() {
           </div>
 
           {/* Spaces list */}
-          {loading ? (
+          {loading || tabLoading ? (
             <div className="text-sm text-[#6B778C] py-8 text-center">Loading spaces…</div>
           ) : filtered.length === 0 ? (
             <div className="text-sm text-[#6B778C] py-8 text-center">

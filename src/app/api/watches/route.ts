@@ -57,19 +57,24 @@ export async function POST(request: Request) {
   // Handle space watch toggle
   if (body.space_id) {
     const { space_id } = body;
-    const { data: existing } = await admin
-      .from("space_watches")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("space_id", space_id)
-      .single();
+    try {
+      const { data: existing } = await admin
+        .from("space_watches")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("space_id", space_id)
+        .single();
 
-    if (existing) {
-      await admin.from("space_watches").delete().eq("user_id", user.id).eq("space_id", space_id);
-      return NextResponse.json({ watched: false });
-    } else {
-      await admin.from("space_watches").insert({ user_id: user.id, space_id });
-      return NextResponse.json({ watched: true });
+      if (existing) {
+        await admin.from("space_watches").delete().eq("user_id", user.id).eq("space_id", space_id);
+        return NextResponse.json({ watched: false });
+      } else {
+        const { error } = await admin.from("space_watches").insert({ user_id: user.id, space_id });
+        if (error) throw error;
+        return NextResponse.json({ watched: true });
+      }
+    } catch {
+      return NextResponse.json({ error: "space_watches table not found — run supabase-spaces-status.sql migration first" }, { status: 500 });
     }
   }
 
