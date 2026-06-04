@@ -8,8 +8,42 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const admin = createAdminClient();
-  const { data } = await admin.from("page_watches").select("page_id").eq("user_id", user.id);
-  return NextResponse.json((data || []).map((r) => r.page_id));
+
+  // Get watched pages
+  const { data: pageWatches } = await admin
+    .from("page_watches")
+    .select("page_id")
+    .eq("user_id", user.id);
+
+  // Get watched spaces (graceful fallback if table doesn't exist)
+  let spaceWatches: { space_id: string }[] = [];
+  try {
+    const { data } = await admin
+      .from("space_watches")
+      .select("space_id")
+      .eq("user_id", user.id);
+    if (data) {
+      // Fetch full space data for watched spaces
+      const spaceIds = data.map((r) => r.space_id);
+      if (spaceIds.length > 0) {
+        const { data: spaces } = await admin
+          .from("spaces")
+          .select("id, name, emoji, description, owner_id, created_at")
+          .in("id", spaceIds);
+        return NextResponse.json({
+          pages: (pageWatches || []).map((r) => r.page_id),
+          spaces: spaces || [],
+        });
+      }
+    }
+  } catch {
+    // space_watches table may not exist yet
+  }
+
+  return NextResponse.json({
+    pages: (pageWatches || []).map((r) => r.page_id),
+    spaces: [],
+  });
 }
 
 export async function POST(request: Request) {
@@ -17,10 +51,32 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { page_id } = await request.json();
-  if (!page_id) return NextResponse.json({ error: "page_id required" }, { status: 400 });
-
+  const body = await request.json();
   const admin = createAdminClient();
+
+  // Handle space watch toggle
+  if (body.space_id) {
+    const { space_id } = body;
+    const { data: existing } = await admin
+      .from("space_watches")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("space_id", space_id)
+      .single();
+
+    if (existing) {
+      await admin.from("space_watches").delete().eq("user_id", user.id).eq("space_id", space_id);
+      return NextResponse.json({ watched: false });
+    } else {
+      await admin.from("space_watches").insert({ user_id: user.id, space_id });
+      return NextResponse.json({ watched: true });
+    }
+  }
+
+  // Handle page watch toggle
+  const { page_id } = body;
+  if (!page_id) return NextResponse.json({ error: "page_id or space_id required" }, { status: 400 });
+
   const { data: existing } = await admin
     .from("page_watches")
     .select("id")
