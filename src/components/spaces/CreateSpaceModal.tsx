@@ -49,6 +49,7 @@ export default function CreateSpaceModal({ open, onClose, onCreated }: CreateSpa
     if (resp.ok) {
       const space = await resp.json();
       toast.success("Space created!");
+      handleClose();
       onCreated(space);
     } else {
       const err = await resp.json();
