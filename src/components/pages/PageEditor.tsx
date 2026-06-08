@@ -236,7 +236,7 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
         <div className="flex items-center justify-between px-4 py-2 border-b border-[#DFE1E6] dark:border-slate-700 bg-white dark:bg-[#1B2A3B] h-12">
 
           {/* Left: collapse + doc icon + title */}
-          <div className="flex items-center gap-1 min-w-0">
+          <div className="flex items-center gap-1.5 min-w-0">
             <button
               onClick={() => router.push(`/spaces/${page.space_id}`)}
               className="h-7 w-7 flex items-center justify-center rounded hover:bg-[#EBECF0] dark:hover:bg-slate-700 transition-colors shrink-0"
@@ -255,7 +255,7 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
             </span>
           </div>
 
-          {/* Right: save + author + publish + close + share + link + more */}
+          {/* Right: save + publish + close + share + link + more */}
           <div className="flex items-center gap-1.5 shrink-0">
             {/* Save status */}
             <span className="text-sm text-[#6B778C] dark:text-slate-400 mr-1">
@@ -263,24 +263,29 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
                 <span className="flex items-center gap-1"><Loader2 className="h-3 w-3 animate-spin" />Saving</span>
               )}
               {saveStatus === "saved" && "Saved"}
-              {saveStatus === "unsaved" && "Unsaved"}
+              {saveStatus === "unsaved" && "Unsaved changes"}
             </span>
 
             {/* Author avatar */}
-            <Avatar className="h-7 w-7 border-2 border-white dark:border-[#1B2A3B] ring-1 ring-[#0052CC]">
+            <Avatar className="h-7 w-7">
               <AvatarImage src={authorAvatar} />
               <AvatarFallback className="text-[10px] bg-[#0052CC] text-white font-bold">
                 {getInitials(authorName)}
               </AvatarFallback>
             </Avatar>
 
-            {/* Publish */}
-            <button
-              onClick={handlePublish}
-              className="flex items-center gap-1 px-3 h-8 bg-[#0052CC] hover:bg-[#0065FF] text-white text-sm font-semibold rounded transition-colors"
-            >
-              Publish…
-            </button>
+            {/* Publish — split button */}
+            <div className="flex items-center">
+              <button
+                onClick={handlePublish}
+                className="flex items-center gap-1 px-3 h-8 bg-[#0052CC] hover:bg-[#0065FF] text-white text-sm font-semibold rounded-l transition-colors"
+              >
+                Publish…
+              </button>
+              <button className="flex items-center px-1.5 h-8 bg-[#0052CC] hover:bg-[#0065FF] text-white rounded-r border-l border-white/20 transition-colors">
+                <ChevronDown className="h-3.5 w-3.5" />
+              </button>
+            </div>
 
             {/* Close */}
             <button
