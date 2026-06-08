@@ -26,8 +26,10 @@ type SaveStatus = "saved" | "saving" | "unsaved";
 
 export default function SpaceEditorClient({ space, currentUserId }: { space: Space; currentUserId: string }) {
   const router = useRouter();
+  const DEFAULT_CONTENT = `<h2>Description</h2><blockquote><p>In a sentence or two, describe the purpose of this space.</p></blockquote><h2>Project Tracker</h2><p>Connect your project management tools</p>`;
+
   const [name, setName] = useState(space.name);
-  const [content, setContent] = useState(space.description || "");
+  const [content, setContent] = useState(space.description || DEFAULT_CONTENT);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
   const [editor, setEditor] = useState<EditorType | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -69,7 +71,7 @@ export default function SpaceEditorClient({ space, currentUserId }: { space: Spa
     toast.success("Link copied");
   }
 
-  const isEmpty = !content || content === "<p></p>" || content.replace(/<[^>]*>/g, "").trim() === "";
+  const isEmpty = false; // default content always present
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-white dark:bg-[#161B22]">
@@ -212,16 +214,6 @@ export default function SpaceEditorClient({ space, currentUserId }: { space: Spa
             className="w-full text-[2.2rem] md:text-[2.6rem] font-bold bg-transparent border-none outline-none placeholder:text-[#B3BAC5] dark:placeholder:text-slate-600 text-[#172B4D] dark:text-white leading-tight mb-6"
           />
 
-          {/* Empty state hint */}
-          {isEmpty && (
-            <p className="text-[#97A0AF] dark:text-slate-500 text-sm mb-2 pointer-events-none select-none">
-              Press{" "}
-              <kbd className="px-1.5 py-0.5 bg-[#F4F5F7] dark:bg-slate-700 border border-[#DFE1E6] dark:border-slate-600 rounded text-xs font-mono text-[#42526E]">space</kbd>
-              {" "}or{" "}
-              <kbd className="px-1.5 py-0.5 bg-[#F4F5F7] dark:bg-slate-700 border border-[#DFE1E6] dark:border-slate-600 rounded text-xs font-mono text-[#42526E]">/</kbd>
-              {" "}to add content
-            </p>
-          )}
 
           {/* Rich text editor */}
           <div className="min-h-[300px]">

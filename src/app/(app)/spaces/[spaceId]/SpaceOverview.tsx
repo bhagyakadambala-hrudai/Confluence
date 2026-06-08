@@ -9,10 +9,12 @@ import {
   Edit, Link2, MoreHorizontal, Star, Users,
   FileText, Trash2, Settings, Lock, X,
   ChevronDown, MoreHorizontal as More,
+  Eye, Clock, Info, Grid, Copy, MoveRight, Upload, Archive, ChevronRight,
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuSeparator, DropdownMenuTrigger,
+  DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 
@@ -191,10 +193,24 @@ export default function SpaceOverview({
     }
   }
 
+  async function handleArchive() {
+    const resp = await fetch(`/api/spaces/${space.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "archived" }),
+    });
+    if (resp.ok) { toast.success("Space archived"); router.push("/spaces"); }
+    else toast.error("Failed to archive space");
+  }
+
   async function handleDelete() {
-    if (!confirm(`Delete space "${space.name}"? This cannot be undone.`)) return;
-    const resp = await fetch(`/api/spaces/${space.id}`, { method: "DELETE" });
-    if (resp.ok) { toast.success("Space deleted"); router.push("/spaces"); }
+    if (!confirm(`Move "${space.name}" to Trash?`)) return;
+    const resp = await fetch(`/api/spaces/${space.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "trashed" }),
+    });
+    if (resp.ok) { toast.success("Space moved to Trash"); router.push("/spaces"); }
     else toast.error("Failed to delete");
   }
 
@@ -245,18 +261,57 @@ export default function SpaceOverview({
                 <MoreHorizontal className="h-4 w-4" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuItem onClick={handleStar} className="flex items-center gap-2 cursor-pointer">
                 <Star className={`h-4 w-4 ${isStarred ? "fill-yellow-400 text-yellow-400" : ""}`} />
-                {isStarred ? "Unstar space" : "Star space"}
+                <span className="flex-1">Star space</span>
+                <span className="text-xs text-[#97A0AF]">Ctrl Alt F</span>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => router.push(`/spaces/${space.id}/settings`)} className="flex items-center gap-2 cursor-pointer">
-                <Settings className="h-4 w-4" /> Space settings
+              <DropdownMenuItem className="flex items-center gap-2 cursor-pointer">
+                <Eye className="h-4 w-4" />
+                <span className="flex-1">Watch settings</span>
+                <ChevronRight className="h-3.5 w-3.5 text-[#97A0AF]" />
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleDelete} className="flex items-center gap-2 cursor-pointer text-red-600 focus:text-red-600">
-                <Trash2 className="h-4 w-4" /> Delete space
+              <DropdownMenuItem className="flex items-center gap-2 cursor-pointer">
+                <Clock className="h-4 w-4" /> Version history
               </DropdownMenuItem>
+              <DropdownMenuItem className="flex items-center gap-2 cursor-pointer">
+                <Info className="h-4 w-4" />
+                <span className="flex-1">Advanced details</span>
+                <ChevronRight className="h-3.5 w-3.5 text-[#97A0AF]" />
+              </DropdownMenuItem>
+              <DropdownMenuItem className="flex items-center gap-2 cursor-pointer">
+                <Grid className="h-4 w-4" />
+                <span className="flex-1">Apps</span>
+                <ChevronRight className="h-3.5 w-3.5 text-[#97A0AF]" />
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="flex items-center gap-2 cursor-pointer">
+                <Copy className="h-4 w-4" /> Make a copy
+              </DropdownMenuItem>
+              <DropdownMenuItem className="flex items-center gap-2 cursor-pointer">
+                <MoveRight className="h-4 w-4" /> Move
+              </DropdownMenuItem>
+              <DropdownMenuItem className="flex items-center gap-2 cursor-pointer">
+                <Upload className="h-4 w-4" />
+                <span className="flex-1">Export</span>
+                <ChevronRight className="h-3.5 w-3.5 text-[#97A0AF]" />
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger className="flex items-center gap-2 cursor-pointer text-red-600 focus:text-red-600 data-[state=open]:bg-red-50">
+                  <Trash2 className="h-4 w-4" /> Archive and delete
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent className="w-44">
+                  <DropdownMenuItem onClick={handleArchive} className="flex items-center gap-2 cursor-pointer">
+                    <Archive className="h-4 w-4" /> Archive
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleDelete} className="flex items-center gap-2 cursor-pointer text-red-600 focus:text-red-600">
+                    <Trash2 className="h-4 w-4" /> Delete
+                  </DropdownMenuItem>
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
