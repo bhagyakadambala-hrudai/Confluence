@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import type { Editor } from "@tiptap/react";
 import EmojiPicker, { EmojiClickData, Theme } from "emoji-picker-react";
+import { ALargeSmall } from "lucide-react";
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from "@/components/ui/tooltip";
@@ -180,6 +181,126 @@ function EmojiButton({ editor }: { editor: Editor }) {
             width={320}
             height={400}
           />
+        </div>
+      )}
+    </>
+  );
+}
+
+/* ── Color picker popup ── */
+const TEXT_COLORS = [
+  "#000000","#1a1a2e","#006466","#1b4332","#b45309","#7f1d1d","#581c87",
+  "#374151","#1d4ed8","#0891b2","#15803d","#d97706","#dc2626","#7c3aed",
+  "#f3f4f6","#bfdbfe","#a5f3fc","#bbf7d0","#fef08a","#fecaca","#e9d5ff",
+];
+
+const HIGHLIGHT_COLORS = [
+  { bg: "#fef9c3", label: "Yellow" },
+  { bg: "#fed7aa", label: "Orange" },
+  { bg: "#fecaca", label: "Red" },
+  { bg: "#bbf7d0", label: "Green" },
+  { bg: "#bfdbfe", label: "Blue" },
+  { bg: "#e9d5ff", label: "Purple" },
+  { bg: "#f3f4f6", label: "Gray" },
+];
+
+function ColorPickerButton({ editor }: { editor: Editor }) {
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const popRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (
+        popRef.current && !popRef.current.contains(e.target as Node) &&
+        btnRef.current && !btnRef.current.contains(e.target as Node)
+      ) setOpen(false);
+    }
+    if (open) document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, [open]);
+
+  function handleOpen() {
+    if (btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setPos({ top: rect.bottom + 4, left: Math.max(8, rect.left - 10) });
+    }
+    setOpen((v) => !v);
+  }
+
+  const currentColor = editor.getAttributes("textStyle").color ?? "#000000";
+
+  return (
+    <>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            ref={btnRef}
+            type="button"
+            onClick={handleOpen}
+            className={cn(
+              "h-7 w-7 flex flex-col items-center justify-center gap-0.5 rounded transition-colors shrink-0",
+              open
+                ? "bg-[#DEEBFF] text-[#0052CC] dark:bg-blue-900/40"
+                : "text-[#42526E] dark:text-slate-300 hover:bg-[#EBECF0] dark:hover:bg-slate-700",
+            )}
+          >
+            <span className="text-[11px] font-bold leading-none" style={{ color: currentColor === "#000000" ? undefined : currentColor }}>A</span>
+            <span className="h-1 w-4 rounded-sm" style={{ backgroundColor: currentColor }} />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" className="text-xs">Text color</TooltipContent>
+      </Tooltip>
+
+      {open && (
+        <div
+          ref={popRef}
+          style={{ position: "fixed", top: pos.top, left: pos.left, zIndex: 9999 }}
+          className="bg-white dark:bg-[#1e2636] border border-[#DFE1E6] dark:border-slate-600 rounded-lg shadow-xl p-3 w-[220px]"
+        >
+          {/* Text colors */}
+          <p className="text-xs font-semibold text-[#172B4D] dark:text-slate-200 mb-2">Text color</p>
+          <div className="grid grid-cols-7 gap-1 mb-3">
+            {TEXT_COLORS.map((color) => (
+              <button
+                key={color}
+                title={color}
+                onClick={() => { editor.chain().focus().setColor(color).run(); setOpen(false); }}
+                className={cn(
+                  "h-7 w-7 rounded border-2 transition-all",
+                  currentColor === color
+                    ? "border-[#0052CC] scale-110"
+                    : "border-transparent hover:border-[#0052CC]/40",
+                )}
+                style={{ backgroundColor: color }}
+              />
+            ))}
+          </div>
+
+          {/* Highlight colors */}
+          <p className="text-xs font-semibold text-[#172B4D] dark:text-slate-200 mb-2">Highlight color</p>
+          <div className="flex gap-1 mb-3">
+            {HIGHLIGHT_COLORS.map(({ bg, label }) => (
+              <button
+                key={bg}
+                title={label}
+                onClick={() => { (editor as any).chain().focus().setHighlight({ color: bg }).run(); setOpen(false); }}
+                className="h-7 w-7 rounded border-2 border-transparent hover:border-[#0052CC]/40 transition-all flex items-center justify-center text-xs font-bold text-[#172B4D]"
+                style={{ backgroundColor: bg }}
+              >
+                A
+              </button>
+            ))}
+          </div>
+
+          {/* Remove color */}
+          <button
+            onClick={() => { editor.chain().focus().unsetColor().run(); (editor as any).chain().focus().unsetHighlight().run(); setOpen(false); }}
+            className="w-full py-1.5 text-sm text-[#42526E] dark:text-slate-300 border border-[#DFE1E6] dark:border-slate-600 rounded hover:bg-[#F4F5F7] dark:hover:bg-slate-700 transition-colors"
+          >
+            Remove color
+          </button>
         </div>
       )}
     </>
@@ -391,6 +512,9 @@ export default function Toolbar({ editor }: ToolbarProps) {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+
+        {/* Text / highlight color */}
+        <ColorPickerButton editor={editor} />
 
         <Sep />
 
