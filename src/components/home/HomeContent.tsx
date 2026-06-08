@@ -458,7 +458,7 @@ export default function HomeContent({ recentPages, firstName }: HomeContentProps
                 {recentPages.slice(0, 6).map((page) => (
                   <Link
                     key={page.id}
-                    href={`/spaces/${page.space_id}/pages/${page.id}`}
+                    href={`/spaces/${page.space_id}/pages/${page.id}/edit`}
                     className="flex items-start gap-3 p-4 rounded-lg border border-[#DFE1E6] dark:border-slate-700 hover:border-[#0052CC] dark:hover:border-blue-500 hover:shadow-sm transition-all group bg-white dark:bg-slate-800"
                   >
                     <span className="text-xl leading-none mt-0.5 shrink-0">{page.emoji || "📄"}</span>

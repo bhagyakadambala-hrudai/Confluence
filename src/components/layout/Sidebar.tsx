@@ -656,7 +656,7 @@ export default function Sidebar({ open, onToggle, user, width = 280 }: SidebarPr
                         .map((page) => (
                           <Link
                             key={page.id}
-                            href={`/spaces/${page.space_id}/pages/${page.id}`}
+                            href={`/spaces/${page.space_id}/pages/${page.id}/edit`}
                             onClick={() => setFlyout(null)}
                             className="flex items-center gap-2.5 px-2 py-2 rounded hover:bg-[#F1F2F4] dark:hover:bg-[#21262d] transition-colors group"
                           >
@@ -735,7 +735,7 @@ export default function Sidebar({ open, onToggle, user, width = 280 }: SidebarPr
                         {starredPages.map((page) => (
                           <Link
                             key={page.id}
-                            href={`/spaces/${page.space_id}/pages/${page.id}`}
+                            href={`/spaces/${page.space_id}/pages/${page.id}/edit`}
                             onClick={() => setFlyout(null)}
                             className="flex items-center gap-2.5 px-2 py-2 rounded hover:bg-[#F1F2F4] dark:hover:bg-[#21262d] transition-colors group"
                           >
@@ -908,7 +908,7 @@ function PageItem({ page, allPages, spaceId, activePageId, depth, onRefresh, onC
           />
         ) : (
           <Link
-            href={`/spaces/${spaceId}/pages/${page.id}`}
+            href={`/spaces/${spaceId}/pages/${page.id}/edit`}
             className="flex items-center gap-1.5 flex-1 min-w-0 py-0.5"
           >
             <span className="text-sm leading-none shrink-0">{page.emoji || "📄"}</span>

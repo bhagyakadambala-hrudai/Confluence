@@ -393,7 +393,7 @@ export default function SpaceOverview({
                 {pages.map((page) => (
                   <Link
                     key={page.id}
-                    href={`/spaces/${space.id}/pages/${page.id}`}
+                    href={`/spaces/${space.id}/pages/${page.id}/edit`}
                     className="flex items-center gap-3 px-3 py-2.5 rounded hover:bg-[#F4F5F7] dark:hover:bg-[#21262d] transition-colors group"
                   >
                     <FileText className="h-4 w-4 text-[#0052CC] shrink-0" />

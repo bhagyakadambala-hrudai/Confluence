@@ -169,7 +169,7 @@ export default function ProfilePage() {
               return (
                 <Link
                   key={page.id}
-                  href={`/spaces/${page.space_id}/pages/${page.id}`}
+                  href={`/spaces/${page.space_id}/pages/${page.id}/edit`}
                   className={`flex items-center gap-3 px-4 py-3 hover:bg-[#F4F5F7] dark:hover:bg-slate-700 transition-colors group ${
                     i > 0 ? "border-t border-[#F4F5F7] dark:border-slate-700" : ""
                   }`}

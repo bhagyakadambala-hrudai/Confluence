@@ -50,7 +50,7 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
   }, [query]);
 
   function navigate(result: SearchResult) {
-    router.push(`/spaces/${result.space_id}/pages/${result.id}`);
+    router.push(`/spaces/${result.space_id}/pages/${result.id}/edit`);
     onClose();
   }
 

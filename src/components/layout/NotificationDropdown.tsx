@@ -79,7 +79,7 @@ export default function NotificationDropdown() {
   function handleNotificationClick(n: Notification) {
     markRead(n.id);
     if (n.page_id && n.space_id) {
-      router.push(`/spaces/${n.space_id}/pages/${n.page_id}`);
+      router.push(`/spaces/${n.space_id}/pages/${n.page_id}/edit`);
     } else if (n.space_id) {
       router.push(`/spaces/${n.space_id}`);
     }

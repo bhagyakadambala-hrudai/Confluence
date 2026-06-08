@@ -266,7 +266,7 @@ export default function SpaceTabs({ space, pages, members: initialMembers, curre
                     return (
                       <Link
                         key={page.id}
-                        href={`/spaces/${space.id}/pages/${page.id}`}
+                        href={`/spaces/${space.id}/pages/${page.id}/edit`}
                         className="flex items-center gap-3 px-3 py-2.5 rounded hover:bg-[#F4F5F7] dark:hover:bg-slate-700/50 transition-colors group"
                       >
                         <span className="text-lg leading-none shrink-0">{page.emoji || "📄"}</span>

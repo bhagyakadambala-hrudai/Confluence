@@ -78,7 +78,7 @@ function TreeNode({
           )}
         </button>
         <Link
-          href={`/spaces/${spaceId}/pages/${node.id}`}
+          href={`/spaces/${spaceId}/pages/${node.id}/edit`}
           className="flex items-center gap-1.5 flex-1 min-w-0"
           onClick={() => onNavigate(node.id)}
         >
