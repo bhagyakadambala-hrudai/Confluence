@@ -41,21 +41,43 @@ interface PageEditorProps {
 
 type SaveStatus = "saved" | "saving" | "unsaved";
 
+/* ── Template preview HTML ── */
+const TEMPLATE_PREVIEWS: Record<string, string> = {
+  "Project plan": `<h1>Project plan</h1><h2>Goals</h2><p>Define the objectives and success criteria for this project.</p><h2>Timeline</h2><p>Outline key milestones and target dates.</p><h2>Resources</h2><p>List team members, tools, and budget needed.</p><h2>Risks</h2><p>Identify potential blockers and mitigation strategies.</p>`,
+  "Meeting notes": `<h1>Meeting notes</h1><h2>Date &amp; attendees</h2><p>Add the meeting date and list who attended.</p><h2>Agenda</h2><ul><li>Topic 1</li><li>Topic 2</li><li>Topic 3</li></ul><h2>Discussion &amp; decisions</h2><p>Summarize what was discussed and any decisions made.</p><h2>Action items</h2><ul><li>[ ] Owner — Task description</li></ul>`,
+  "End of week status": `<h1>End of week status</h1><h2>Status</h2><p>🟢 On track</p><h2>Accomplishments</h2><ul><li>Completed X</li><li>Shipped Y</li></ul><h2>Next week</h2><ul><li>Plan to work on Z</li></ul><h2>Blockers</h2><p>No blockers at this time.</p>`,
+  "Table": `<table><tbody><tr><th>Column 1</th><th>Column 2</th><th>Column 3</th></tr><tr><td>Row 1</td><td></td><td></td></tr><tr><td>Row 2</td><td></td><td></td></tr></tbody></table>`,
+  "Info panel": `<blockquote><p><strong>ℹ️ Note</strong></p><p>Add your important information or callout text here.</p></blockquote>`,
+  "Table of contents": `<h1>Document title</h1><h2>Section 1</h2><p>Content for section one goes here.</p><h2>Section 2</h2><p>Content for section two goes here.</p><h2>Section 3</h2><p>Content for section three goes here.</p>`,
+};
+
 /* ── Quick-insert bar (shown when editor content is empty) ── */
 const TEMPLATES_BAR = [
-  { label: "Project plan", icon: <FileText className="h-3.5 w-3.5" /> },
-  { label: "Meeting notes", icon: <FileText className="h-3.5 w-3.5" /> },
-  { label: "End of week status r...", icon: <FileText className="h-3.5 w-3.5" /> },
+  { label: "Project plan", icon: <FileText className="h-3.5 w-3.5" />, key: "Project plan" },
+  { label: "Meeting notes", icon: <FileText className="h-3.5 w-3.5" />, key: "Meeting notes" },
+  { label: "End of week status r...", icon: <FileText className="h-3.5 w-3.5" />, key: "End of week status" },
 ];
 
-function QuickInsertBar({ onInsert }: { onInsert: (type: string) => void }) {
+function QuickInsertBar({
+  onInsert,
+  onHover,
+  onLeave,
+}: {
+  onInsert: (type: string) => void;
+  onHover: (html: string) => void;
+  onLeave: () => void;
+}) {
   return (
-    <div className="mx-auto mt-10 max-w-2xl rounded-xl border border-[#DFE1E6] dark:border-slate-700 bg-white dark:bg-[#1e2d3d] shadow-md overflow-hidden select-none">
+    <div
+      className="mx-auto mt-10 max-w-2xl rounded-xl border border-[#DFE1E6] dark:border-slate-700 bg-white dark:bg-[#1e2d3d] shadow-md overflow-hidden select-none"
+      onMouseLeave={onLeave}
+    >
       <div className="flex items-center flex-wrap gap-0.5 px-2 py-1.5 border-b border-[#F4F5F7] dark:border-slate-700">
         {TEMPLATES_BAR.map((item) => (
           <button
             key={item.label}
-            onMouseDown={(e) => { e.preventDefault(); onInsert("template:" + item.label); }}
+            onMouseEnter={() => onHover(TEMPLATE_PREVIEWS[item.key] || "")}
+            onMouseDown={(e) => { e.preventDefault(); onInsert("template:" + item.key); }}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-[#42526E] dark:text-slate-300 hover:bg-[#F4F5F7] dark:hover:bg-slate-700 transition-colors"
           >
             <span className="text-[#6B778C]">{item.icon}</span>
@@ -71,12 +93,13 @@ function QuickInsertBar({ onInsert }: { onInsert: (type: string) => void }) {
       </div>
       <div className="flex items-center flex-wrap gap-0.5 px-2 py-1.5">
         {[
-          { label: "Table", icon: <Table2 className="h-3.5 w-3.5" />, action: "table" },
-          { label: "Info panel", icon: <Info className="h-3.5 w-3.5" />, action: "info" },
-          { label: "Table of contents", icon: <List className="h-3.5 w-3.5" />, action: "toc" },
+          { label: "Table", icon: <Table2 className="h-3.5 w-3.5" />, action: "table", key: "Table" },
+          { label: "Info panel", icon: <Info className="h-3.5 w-3.5" />, action: "info", key: "Info panel" },
+          { label: "Table of contents", icon: <List className="h-3.5 w-3.5" />, action: "toc", key: "Table of contents" },
         ].map((item) => (
           <button
             key={item.label}
+            onMouseEnter={() => onHover(TEMPLATE_PREVIEWS[item.key] || "")}
             onMouseDown={(e) => { e.preventDefault(); onInsert(item.action); }}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-[#42526E] dark:text-slate-300 hover:bg-[#F4F5F7] dark:hover:bg-slate-700 transition-colors"
           >
@@ -106,6 +129,8 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
   const [showShareModal, setShowShareModal] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSaved = useRef({ title: page.title, content: page.content || "" });
+
+  const [previewContent, setPreviewContent] = useState<string | null>(null);
 
   const authorName = page.profiles?.full_name || "Unknown";
   const authorAvatar = page.profiles?.avatar_url;
@@ -176,13 +201,25 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
   }
 
   function handleQuickInsert(type: string) {
+    setPreviewContent(null);
     if (!editor) return;
     if (type === "table") {
       editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
     } else if (type === "info") {
       editor.chain().focus().toggleBlockquote().run();
-    } else if (type === "toc" || type.startsWith("template:")) {
-      router.push("/templates");
+    } else if (type === "toc") {
+      const html = TEMPLATE_PREVIEWS["Table of contents"];
+      editor.commands.setContent(html);
+      setContent(editor.getHTML());
+    } else if (type.startsWith("template:")) {
+      const key = type.replace("template:", "");
+      const html = TEMPLATE_PREVIEWS[key];
+      if (html) {
+        editor.commands.setContent(html);
+        setContent(editor.getHTML());
+      } else {
+        toast("Template coming soon");
+      }
     } else if (type === "more") {
       toast("More elements coming soon");
     }
@@ -402,8 +439,8 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
         {/* Editor (toolbar managed externally) */}
         <div className="min-h-[200px]">
           <Editor
-            content={content}
-            onChange={setContent}
+            content={previewContent !== null ? previewContent : content}
+            onChange={previewContent !== null ? () => {} : setContent}
             showToolbar={false}
             placeholder=""
             onEditorReady={setEditor}
@@ -411,7 +448,13 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
         </div>
 
         {/* Quick-insert bar (when empty) */}
-        {isEmpty && <QuickInsertBar onInsert={handleQuickInsert} />}
+        {isEmpty && (
+          <QuickInsertBar
+            onInsert={handleQuickInsert}
+            onHover={(html) => setPreviewContent(html)}
+            onLeave={() => setPreviewContent(null)}
+          />
+        )}
 
         {/* Comments */}
         <div className="mt-16 border-t border-[#F4F5F7] dark:border-slate-700 pt-8">
