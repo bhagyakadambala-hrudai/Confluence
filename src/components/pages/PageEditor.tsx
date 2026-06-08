@@ -227,7 +227,7 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
 
   return (
     <>
-    <div className="flex flex-col h-screen overflow-hidden bg-white dark:bg-[#1B2A3B]">
+    <div className="flex flex-col min-h-full bg-white dark:bg-[#1B2A3B]">
 
       {/* ── Sticky header: top bar + toolbar ── */}
       <div className="sticky top-0 z-20">
@@ -348,7 +348,6 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
       </div>
 
       {/* ── Page content ── */}
-      <div className="flex-1 overflow-y-auto">
       <div className="max-w-4xl mx-auto w-full px-8 md:px-16 py-10">
 
         {/* Page meta action bar — above title */}
@@ -460,7 +459,6 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
         <div className="mt-16 border-t border-[#F4F5F7] dark:border-slate-700 pt-8">
           <CommentSection pageId={page.id} currentUserId={currentUserId} />
         </div>
-      </div>
       </div>
     </div>
 

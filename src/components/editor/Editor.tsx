@@ -4,6 +4,8 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import type { Editor as EditorType } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
+import Subscript from "@tiptap/extension-subscript";
+import Superscript from "@tiptap/extension-superscript";
 import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
 import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
@@ -41,6 +43,8 @@ export default function Editor({
     extensions: [
       StarterKit.configure({ codeBlock: false }),
       Underline,
+      Subscript,
+      Superscript,
       TaskList,
       TaskItem.configure({ nested: true }),
       CodeBlockLowlight.configure({ lowlight }),
