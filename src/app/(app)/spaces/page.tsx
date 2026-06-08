@@ -307,11 +307,6 @@ export default function SpacesPage() {
                     </div>
                   </Link>
 
-                  {/* Category */}
-                  <span className="text-sm text-[#6B778C] dark:text-slate-400 hidden md:block shrink-0 w-32 truncate">
-                    {space.description ? (space.description.replace(/<[^>]*>/g, "").trim() || "collaboration") : "collaboration"}
-                  </span>
-
                   {/* Actions */}
                   <div className="flex items-center gap-1 shrink-0">
                     {activeTab !== "Trashed" && activeTab !== "Archived" && (
