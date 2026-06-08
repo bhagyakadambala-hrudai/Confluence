@@ -9,64 +9,47 @@ export default async function NewPagePage() {
 
   const admin = createAdminClient();
 
-  // Get the user's first space
-  let { data: spaces } = await admin
-    .from("spaces")
-    .select("id")
-    .or(`owner_id.eq.${user.id},id.in.(select space_id from space_members where user_id='${user.id}')`)
+  // Two-step: get space IDs this user is a member of
+  const { data: memberships } = await admin
+    .from("space_members")
+    .select("space_id")
+    .eq("user_id", user.id)
     .order("created_at")
     .limit(1);
 
-  // Fallback: spaces owned by user
-  if (!spaces || spaces.length === 0) {
+  let spaceId: string | null = null;
+
+  if (memberships && memberships.length > 0) {
+    spaceId = memberships[0].space_id;
+  } else {
+    // Fallback: spaces owned by user
     const { data: owned } = await admin
       .from("spaces")
       .select("id")
       .eq("owner_id", user.id)
       .order("created_at")
       .limit(1);
-    spaces = owned;
+    spaceId = owned?.[0]?.id ?? null;
   }
 
-  // No spaces at all — auto-create a personal space so the editor opens directly
-  let spaceId: string;
-  if (!spaces || spaces.length === 0) {
+  // No spaces — auto-create a personal space
+  if (!spaceId) {
     const { data: newSpace } = await admin
       .from("spaces")
-      .insert({
-        name: "My Space",
-        description: "Personal workspace",
-        emoji: "🏠",
-        owner_id: user.id,
-      })
+      .insert({ name: "My Space", description: "Personal workspace", emoji: "🏠", owner_id: user.id })
       .select("id")
       .single();
 
     if (!newSpace) redirect("/");
 
-    await admin.from("space_members").insert({
-      space_id: newSpace.id,
-      user_id: user.id,
-      role: "owner",
-    });
-
+    await admin.from("space_members").insert({ space_id: newSpace.id, user_id: user.id, role: "owner" });
     spaceId = newSpace.id;
-  } else {
-    spaceId = spaces[0].id;
   }
 
-  // Create a blank page and open the editor
+  // Create a blank page and redirect to editor
   const { data: page } = await admin
     .from("pages")
-    .insert({
-      space_id: spaceId,
-      title: "",
-      content: "",
-      emoji: "📄",
-      author_id: user.id,
-      labels: [],
-      position: 0,
-    })
+    .insert({ space_id: spaceId, title: "", content: "", emoji: "📄", author_id: user.id, labels: [], position: 0 })
     .select("id, space_id")
     .single();
 

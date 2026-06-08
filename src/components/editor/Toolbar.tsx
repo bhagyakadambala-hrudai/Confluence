@@ -327,6 +327,17 @@ export default function Toolbar({ editor }: ToolbarProps) {
     <TooltipProvider delayDuration={300}>
       <div className="flex flex-wrap items-center gap-0 px-2 py-1 border-b border-[#DFE1E6] dark:border-slate-700 bg-white dark:bg-[#1B2A3B] overflow-x-auto">
 
+        {/* Improve formatting (AI — UI only) */}
+        <button
+          type="button"
+          disabled
+          className="flex items-center gap-1.5 px-2 h-7 rounded text-xs text-[#B3BAC5] dark:text-slate-600 cursor-not-allowed shrink-0 mr-1"
+        >
+          <ALargeSmall className="h-3.5 w-3.5" />
+          Improve formatting
+        </button>
+        <Sep />
+
         {/* Text style dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
