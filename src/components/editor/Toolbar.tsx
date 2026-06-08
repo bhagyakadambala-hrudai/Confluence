@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import type { Editor } from "@tiptap/react";
-import { Separator } from "@/components/ui/separator";
+import EmojiPicker, { EmojiClickData, Theme } from "emoji-picker-react";
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from "@/components/ui/tooltip";
@@ -58,6 +58,15 @@ function Sep() {
   return <div className="h-5 w-px bg-[#DFE1E6] dark:bg-slate-600 mx-0.5 shrink-0" />;
 }
 
+/* Keyboard shortcut badge */
+function Kbd({ children }: { children: string }) {
+  return (
+    <span className="ml-auto shrink-0 text-[10px] text-[#6B778C] dark:text-slate-400 bg-[#F4F5F7] dark:bg-slate-700 px-1.5 py-0.5 rounded font-mono leading-none">
+      {children}
+    </span>
+  );
+}
+
 const TEXT_STYLES = [
   { label: "Normal text", value: 0, icon: <Pilcrow className="h-4 w-4" />, className: "text-sm" },
   { label: "Heading 1",   value: 1, icon: <Heading1 className="h-4 w-4" />, className: "text-xl font-bold" },
@@ -101,6 +110,60 @@ function TableGridPicker({ onPick }: { onPick: (rows: number, cols: number) => v
           })
         )}
       </div>
+    </div>
+  );
+}
+
+/* ── Emoji picker popup ── */
+function EmojiButton({ editor }: { editor: Editor }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    if (open) document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, [open]);
+
+  function onEmojiClick(data: EmojiClickData) {
+    editor.chain().focus().insertContent(data.emoji).run();
+    setOpen(false);
+  }
+
+  return (
+    <div className="relative" ref={ref}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            className={cn(
+              "h-7 w-7 flex items-center justify-center rounded transition-colors shrink-0",
+              open
+                ? "bg-[#DEEBFF] text-[#0052CC] dark:bg-blue-900/40 dark:text-blue-300"
+                : "text-[#42526E] dark:text-slate-300 hover:bg-[#EBECF0] dark:hover:bg-slate-700",
+            )}
+          >
+            <Smile className="h-3.5 w-3.5" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" className="text-xs">Emoji</TooltipContent>
+      </Tooltip>
+
+      {open && (
+        <div className="absolute top-full mt-1 z-50" style={{ left: "50%", transform: "translateX(-50%)" }}>
+          <EmojiPicker
+            onEmojiClick={onEmojiClick}
+            autoFocusSearch
+            theme={Theme.AUTO}
+            lazyLoadEmojis
+            width={320}
+            height={380}
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -153,24 +216,25 @@ export default function Toolbar({ editor }: ToolbarProps) {
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={() => editor.chain().focus().clearNodes().unsetAllMarks().run()}
-              className="flex items-center gap-2 text-[#6B778C]"
+              className="flex items-center gap-2"
             >
-              <RemoveFormatting className="h-4 w-4" />
-              Clear formatting
+              <RemoveFormatting className="h-4 w-4 text-[#6B778C]" />
+              <span>Clear formatting</span>
+              <Kbd>Ctrl+\</Kbd>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 
         <Sep />
 
-        {/* Bold / Underline / Italic + dropdown */}
-        <Btn title="Bold (⌘B)" active={editor.isActive("bold")} onClick={() => editor.chain().focus().toggleBold().run()}>
+        {/* Bold / Underline / Italic + full formatting dropdown */}
+        <Btn title="Bold (Ctrl+B)" active={editor.isActive("bold")} onClick={() => editor.chain().focus().toggleBold().run()}>
           <Bold className="h-3.5 w-3.5" />
         </Btn>
-        <Btn title="Underline (⌘U)" active={editor.isActive("underline")} onClick={() => editor.chain().focus().toggleUnderline().run()}>
+        <Btn title="Underline (Ctrl+U)" active={editor.isActive("underline")} onClick={() => editor.chain().focus().toggleUnderline().run()}>
           <Underline className="h-3.5 w-3.5" />
         </Btn>
-        <Btn title="Italic (⌘I)" active={editor.isActive("italic")} onClick={() => editor.chain().focus().toggleItalic().run()}>
+        <Btn title="Italic (Ctrl+I)" active={editor.isActive("italic")} onClick={() => editor.chain().focus().toggleItalic().run()}>
           <Italic className="h-3.5 w-3.5" />
         </Btn>
         <DropdownMenu>
@@ -179,35 +243,66 @@ export default function Toolbar({ editor }: ToolbarProps) {
               <ChevronDown className="h-3 w-3" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-52">
-            <DropdownMenuItem onClick={() => editor.chain().focus().toggleStrike().run()} className="flex items-center gap-2">
-              <Strikethrough className="h-4 w-4" /> Strikethrough
+          <DropdownMenuContent align="start" className="w-56">
+            <DropdownMenuItem
+              onClick={() => editor.chain().focus().toggleBold().run()}
+              className={cn("flex items-center gap-2", editor.isActive("bold") && "bg-[#DEEBFF] dark:bg-blue-900/20")}
+            >
+              <Bold className="h-4 w-4" /> <span className="flex-1">Bold</span> <Kbd>Ctrl+B</Kbd>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => editor.chain().focus().toggleCode().run()} className="flex items-center gap-2">
-              <Code2 className="h-4 w-4" /> Inline code
+            <DropdownMenuItem
+              onClick={() => editor.chain().focus().toggleItalic().run()}
+              className={cn("flex items-center gap-2", editor.isActive("italic") && "bg-[#DEEBFF] dark:bg-blue-900/20")}
+            >
+              <Italic className="h-4 w-4" /> <span className="flex-1">Italic</span> <Kbd>Ctrl+I</Kbd>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => editor.chain().focus().toggleUnderline().run()}
+              className={cn("flex items-center gap-2", editor.isActive("underline") && "bg-[#DEEBFF] dark:bg-blue-900/20")}
+            >
+              <Underline className="h-4 w-4" /> <span className="flex-1">Underline</span> <Kbd>Ctrl+U</Kbd>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => editor.chain().focus().toggleStrike().run()}
+              className={cn("flex items-center gap-2", editor.isActive("strike") && "bg-[#DEEBFF] dark:bg-blue-900/20")}
+            >
+              <Strikethrough className="h-4 w-4" /> <span className="flex-1">Strikethrough</span> <Kbd>Ctrl+Shift+S</Kbd>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => editor.chain().focus().toggleCode().run()}
+              className={cn("flex items-center gap-2", editor.isActive("code") && "bg-[#DEEBFF] dark:bg-blue-900/20")}
+            >
+              <Code2 className="h-4 w-4" /> <span className="flex-1">Code</span> <Kbd>Ctrl+Shift+M</Kbd>
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => (editor as any).chain().focus().toggleSubscript?.().run()}
               className="flex items-center gap-2"
             >
-              <Subscript className="h-4 w-4" /> Subscript
+              <Subscript className="h-4 w-4" /> <span className="flex-1">Subscript</span> <Kbd>Ctrl+Shift+,</Kbd>
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => (editor as any).chain().focus().toggleSuperscript?.().run()}
               className="flex items-center gap-2"
             >
-              <Superscript className="h-4 w-4" /> Superscript
+              <Superscript className="h-4 w-4" /> <span className="flex-1">Superscript</span> <Kbd>Ctrl+Shift+.</Kbd>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={() => editor.chain().focus().clearNodes().unsetAllMarks().run()}
+              className="flex items-center gap-2 text-[#6B778C]"
+            >
+              <RemoveFormatting className="h-4 w-4" /> <span className="flex-1">Clear formatting</span> <Kbd>Ctrl+\</Kbd>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 
         <Sep />
 
-        {/* Lists + dropdown */}
-        <Btn title="Bullet list" active={editor.isActive("bulletList")} onClick={() => editor.chain().focus().toggleBulletList().run()}>
+        {/* Lists + dropdown with shortcuts */}
+        <Btn title="Bullet list (Ctrl+Shift+8)" active={editor.isActive("bulletList")} onClick={() => editor.chain().focus().toggleBulletList().run()}>
           <List className="h-3.5 w-3.5" />
         </Btn>
-        <Btn title="Numbered list" active={editor.isActive("orderedList")} onClick={() => editor.chain().focus().toggleOrderedList().run()}>
+        <Btn title="Numbered list (Ctrl+Shift+7)" active={editor.isActive("orderedList")} onClick={() => editor.chain().focus().toggleOrderedList().run()}>
           <ListOrdered className="h-3.5 w-3.5" />
         </Btn>
         <DropdownMenu>
@@ -216,22 +311,37 @@ export default function Toolbar({ editor }: ToolbarProps) {
               <ChevronDown className="h-3 w-3" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-48">
-            <DropdownMenuItem onClick={() => editor.chain().focus().toggleTaskList().run()} className="flex items-center gap-2">
-              <CheckSquare className="h-4 w-4" /> Task list
+          <DropdownMenuContent align="start" className="w-56">
+            <DropdownMenuItem
+              onClick={() => editor.chain().focus().toggleBulletList().run()}
+              className={cn("flex items-center gap-2", editor.isActive("bulletList") && "bg-[#DEEBFF] dark:bg-blue-900/20")}
+            >
+              <List className="h-4 w-4" /> <span className="flex-1">Bulleted list</span> <Kbd>Ctrl+Shift+8</Kbd>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => editor.chain().focus().toggleOrderedList().run()}
+              className={cn("flex items-center gap-2", editor.isActive("orderedList") && "bg-[#DEEBFF] dark:bg-blue-900/20")}
+            >
+              <ListOrdered className="h-4 w-4" /> <span className="flex-1">Numbered list</span> <Kbd>Ctrl+Shift+7</Kbd>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => editor.chain().focus().toggleTaskList().run()}
+              className={cn("flex items-center gap-2", editor.isActive("taskList") && "bg-[#DEEBFF] dark:bg-blue-900/20")}
+            >
+              <CheckSquare className="h-4 w-4" /> <span className="flex-1">Task list</span> <Kbd>Ctrl+Shift+6</Kbd>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={() => editor.chain().focus().liftListItem("listItem").run()}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 text-[#6B778C]"
             >
-              <Outdent className="h-4 w-4" /> Outdent <span className="ml-auto text-xs text-[#6B778C]">⇧Tab</span>
+              <Outdent className="h-4 w-4" /> <span className="flex-1">Outdent</span> <Kbd>Shift+Tab</Kbd>
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => editor.chain().focus().sinkListItem("listItem").run()}
               className="flex items-center gap-2"
             >
-              <Indent className="h-4 w-4" /> Indent <span className="ml-auto text-xs text-[#6B778C]">Tab</span>
+              <Indent className="h-4 w-4" /> <span className="flex-1">Indent</span> <Kbd>Tab</Kbd>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -250,16 +360,16 @@ export default function Toolbar({ editor }: ToolbarProps) {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-44">
             <DropdownMenuItem onClick={() => {}} className="flex items-center gap-2">
-              <AlignLeft className="h-4 w-4" /> Left <span className="ml-auto text-xs text-[#6B778C]">⌘⇧L</span>
+              <AlignLeft className="h-4 w-4" /> <span className="flex-1">Left</span> <Kbd>Ctrl+Shift+L</Kbd>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => {}} className="flex items-center gap-2">
-              <AlignCenter className="h-4 w-4" /> Center <span className="ml-auto text-xs text-[#6B778C]">⌘⇧E</span>
+              <AlignCenter className="h-4 w-4" /> <span className="flex-1">Center</span> <Kbd>Ctrl+Shift+E</Kbd>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => {}} className="flex items-center gap-2">
-              <AlignRight className="h-4 w-4" /> Right <span className="ml-auto text-xs text-[#6B778C]">⌘⇧R</span>
+              <AlignRight className="h-4 w-4" /> <span className="flex-1">Right</span> <Kbd>Ctrl+Shift+R</Kbd>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => {}} className="flex items-center gap-2">
-              <AlignJustify className="h-4 w-4" /> Justify
+              <AlignJustify className="h-4 w-4" /> <span className="flex-1">Justify</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -274,9 +384,9 @@ export default function Toolbar({ editor }: ToolbarProps) {
         <Btn title="Mention (@)" onClick={() => editor.chain().focus().insertContent("@").run()}>
           <AtSign className="h-3.5 w-3.5" />
         </Btn>
-        <Btn title="Emoji" onClick={() => editor.chain().focus().insertContent("😊").run()}>
-          <Smile className="h-3.5 w-3.5" />
-        </Btn>
+
+        {/* Full emoji picker */}
+        <EmojiButton editor={editor} />
 
         <Sep />
 
@@ -326,17 +436,17 @@ export default function Toolbar({ editor }: ToolbarProps) {
         <Sep />
 
         {/* Link */}
-        <Btn title="Link (⌘K)" active={editor.isActive("link")} onClick={setLink}>
+        <Btn title="Link (Ctrl+K)" active={editor.isActive("link")} onClick={setLink}>
           <LinkIcon className="h-3.5 w-3.5" />
         </Btn>
 
         <Sep />
 
         {/* Undo / Redo */}
-        <Btn title="Undo (⌘Z)" onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()}>
+        <Btn title="Undo (Ctrl+Z)" onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()}>
           <Undo className="h-3.5 w-3.5" />
         </Btn>
-        <Btn title="Redo (⌘⇧Z)" onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()}>
+        <Btn title="Redo (Ctrl+Shift+Z)" onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()}>
           <Redo className="h-3.5 w-3.5" />
         </Btn>
       </div>
