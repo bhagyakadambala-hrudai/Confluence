@@ -21,6 +21,7 @@ import {
   FileText, ExternalLink, X, Filter, Lock,
   Settings, Trash2, Archive, Link2, Copy, Move, Pencil,
   Eye, UserCog, BarChart2, Zap, Folder, AlignLeft,
+  PenLine, Database, Video,
 } from "lucide-react";
 import { cn, getInitials, formatRelativeTime } from "@/lib/utils";
 import { toast } from "sonner";
@@ -449,31 +450,36 @@ export default function Sidebar({ open, onToggle, user, width = 280 }: SidebarPr
                   Create
                 </button>
                 {showCreatePopup && (
-                  <div className="absolute left-3 bottom-full mb-1 w-56 bg-white dark:bg-[#1B2A3B] rounded-xl border border-[#DFE1E6] dark:border-slate-700 shadow-xl z-50 py-1 overflow-hidden">
-                    <CreateMenuItem
+                  <div className="absolute left-3 bottom-full mb-1 w-52 bg-white dark:bg-[#1B2A3B] rounded-xl border border-[#DFE1E6] dark:border-slate-700 shadow-xl z-50 py-1.5 overflow-hidden">
+                    <SimpleCreateItem
                       icon={<FileText className="h-4 w-4 text-[#0052CC]" />}
                       label="Page"
-                      description="A blank canvas"
                       onClick={() => { setShowCreatePopup(false); createPage(); }}
                     />
-                    <CreateMenuItem
-                      icon={<span className="text-base leading-none">📋</span>}
-                      label="Start from template"
-                      description="Use an existing layout"
-                      onClick={() => { setShowCreatePopup(false); router.push("/templates"); }}
+                    <SimpleCreateItem
+                      icon={<PenLine className="h-4 w-4 text-[#6554C0]" />}
+                      label="Whiteboard"
+                      onClick={() => { setShowCreatePopup(false); toast("Whiteboard coming soon"); }}
                     />
-                    <div className="h-px bg-[#F4F5F7] dark:bg-slate-700 my-1" />
-                    <CreateMenuItem
+                    <SimpleCreateItem
+                      icon={<Database className="h-4 w-4 text-[#36B37E]" />}
+                      label="Database"
+                      onClick={() => { setShowCreatePopup(false); toast("Database coming soon"); }}
+                    />
+                    <SimpleCreateItem
+                      icon={<Link2 className="h-4 w-4 text-[#00B8D9]" />}
+                      label="Smart Link"
+                      onClick={() => { setShowCreatePopup(false); toast("Smart Link coming soon"); }}
+                    />
+                    <SimpleCreateItem
                       icon={<Folder className="h-4 w-4 text-amber-500" />}
                       label="Folder"
-                      description="Organise your content"
                       onClick={() => { setShowCreatePopup(false); toast("Folders coming soon"); }}
                     />
-                    <CreateMenuItem
-                      icon={<AlignLeft className="h-4 w-4 text-green-500" />}
-                      label="Live Doc"
-                      description="Real-time document"
-                      onClick={() => { setShowCreatePopup(false); toast("Live Docs coming soon"); }}
+                    <SimpleCreateItem
+                      icon={<Video className="h-4 w-4 text-red-500" />}
+                      label="Loom video"
+                      onClick={() => { setShowCreatePopup(false); toast("Loom video coming soon"); }}
                     />
                   </div>
                 )}
@@ -817,6 +823,20 @@ function CreateMenuItem({ icon, label, description, onClick }: {
         <p className="text-sm font-medium text-[#172B4D] dark:text-slate-200">{label}</p>
         <p className="text-xs text-[#6B778C] dark:text-slate-400">{description}</p>
       </div>
+    </button>
+  );
+}
+
+function SimpleCreateItem({ icon, label, onClick }: {
+  icon: React.ReactNode; label: string; onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full flex items-center gap-3 px-4 py-2 hover:bg-[#F4F5F7] dark:hover:bg-[#21262d] transition-colors text-left"
+    >
+      <span className="shrink-0">{icon}</span>
+      <span className="text-sm text-[#172B4D] dark:text-slate-200">{label}</span>
     </button>
   );
 }
