@@ -65,11 +65,11 @@ export default function CreateSpaceModal({ open, onClose, onCreated }: CreateSpa
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={handleClose} />
-      <div className="relative z-10 w-full max-w-5xl h-[90vh] max-h-[700px] bg-white dark:bg-[#1e2636] rounded-xl shadow-2xl flex overflow-hidden">
+      <div className="relative z-10 w-full max-w-4xl bg-white dark:bg-[#1e2636] rounded-xl shadow-2xl flex overflow-hidden">
 
         {/* ── Left panel ── */}
-        <div className="flex flex-col w-[55%] min-w-0 h-full">
-          <div className="flex-1 overflow-y-auto px-10 py-8">
+        <div className="flex flex-col w-[55%] min-w-0">
+          <div className="px-10 py-8">
             <h1 className="text-2xl font-bold text-[#172B4D] dark:text-white mb-1">Create new space</h1>
             <p className="text-sm text-[#6B778C] dark:text-slate-400 mb-7">
               Required fields are marked with an asterisk <span className="text-red-500">*</span>
@@ -172,7 +172,7 @@ export default function CreateSpaceModal({ open, onClose, onCreated }: CreateSpa
         </div>
 
         {/* ── Right panel ── */}
-        <div className="flex-1 bg-gradient-to-br from-[#E8F4FC] via-[#C8DFF5] to-[#B8D0EE] dark:from-[#1a2332] dark:via-[#1e2a3a] dark:to-[#243040] relative overflow-hidden flex flex-col">
+        <div className="flex-1 min-h-[420px] bg-gradient-to-br from-[#E8F4FC] via-[#C8DFF5] to-[#B8D0EE] dark:from-[#1a2332] dark:via-[#1e2a3a] dark:to-[#243040] relative overflow-hidden flex flex-col">
           <button
             onClick={handleClose}
             className="absolute top-4 right-4 z-10 h-8 w-8 flex items-center justify-center rounded-full bg-white/60 dark:bg-black/20 hover:bg-white/90 dark:hover:bg-black/40 transition-colors text-[#42526E] dark:text-slate-300"
