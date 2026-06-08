@@ -117,15 +117,30 @@ function TableGridPicker({ onPick }: { onPick: (rows: number, cols: number) => v
 /* ── Emoji picker popup ── */
 function EmojiButton({ editor }: { editor: Editor }) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const pickerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (
+        pickerRef.current && !pickerRef.current.contains(e.target as Node) &&
+        btnRef.current && !btnRef.current.contains(e.target as Node)
+      ) {
+        setOpen(false);
+      }
     }
     if (open) document.addEventListener("mousedown", onClickOutside);
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, [open]);
+
+  function handleOpen() {
+    if (btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setPos({ top: rect.bottom + 4, left: Math.max(8, rect.left - 120) });
+    }
+    setOpen((v) => !v);
+  }
 
   function onEmojiClick(data: EmojiClickData) {
     editor.chain().focus().insertContent(data.emoji).run();
@@ -133,12 +148,13 @@ function EmojiButton({ editor }: { editor: Editor }) {
   }
 
   return (
-    <div className="relative" ref={ref}>
+    <>
       <Tooltip>
         <TooltipTrigger asChild>
           <button
+            ref={btnRef}
             type="button"
-            onClick={() => setOpen((v) => !v)}
+            onClick={handleOpen}
             className={cn(
               "h-7 w-7 flex items-center justify-center rounded transition-colors shrink-0",
               open
@@ -153,18 +169,20 @@ function EmojiButton({ editor }: { editor: Editor }) {
       </Tooltip>
 
       {open && (
-        <div className="absolute top-full mt-1 z-50" style={{ left: "50%", transform: "translateX(-50%)" }}>
+        <div
+          ref={pickerRef}
+          style={{ position: "fixed", top: pos.top, left: pos.left, zIndex: 9999 }}
+        >
           <EmojiPicker
             onEmojiClick={onEmojiClick}
             autoFocusSearch
-            theme={Theme.AUTO}
-            lazyLoadEmojis
+            theme={Theme.LIGHT}
             width={320}
-            height={380}
+            height={400}
           />
         </div>
       )}
-    </div>
+    </>
   );
 }
 
