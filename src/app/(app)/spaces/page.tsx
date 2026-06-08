@@ -309,7 +309,7 @@ export default function SpacesPage() {
 
                   {/* Category */}
                   <span className="text-sm text-[#6B778C] dark:text-slate-400 hidden md:block shrink-0 w-32 truncate">
-                    {space.description || "collaboration"}
+                    {space.description ? (space.description.replace(/<[^>]*>/g, "").trim() || "collaboration") : "collaboration"}
                   </span>
 
                   {/* Actions */}
