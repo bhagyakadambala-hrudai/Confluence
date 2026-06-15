@@ -13,7 +13,7 @@ export async function GET(request: Request) {
   const admin = createAdminClient();
   let query = admin
     .from("pages")
-    .select("id, title, emoji, parent_id, space_id, position, created_at, updated_at")
+    .select("id, title, emoji, parent_id, space_id, position, is_draft, created_at, updated_at")
     .order("position", { ascending: true });
 
   if (spaceId) query = query.eq("space_id", spaceId);
@@ -50,6 +50,7 @@ export async function POST(request: Request) {
       emoji: emoji || "📄",
       author_id: user.id,
       position: (count || 0) + 1,
+      is_draft: true,
     })
     .select()
     .single();

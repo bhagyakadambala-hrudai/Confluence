@@ -165,6 +165,12 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
 
   async function handlePublish() {
     await save(title, content);
+    // Mark page as published (not a draft)
+    await fetch(`/api/pages/${page.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_draft: false }),
+    });
     const resp = await fetch(`/api/pages/${page.id}/versions`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

@@ -38,6 +38,7 @@ interface Page {
   emoji: string;
   parent_id: string | null;
   access_mode?: string;
+  is_draft?: boolean;
 }
 
 interface SidebarProps {
@@ -855,6 +856,11 @@ function PageItem({ page, allPages, spaceId, activePageId, depth, onRefresh, onC
           >
             <span className="text-sm leading-none shrink-0">{page.emoji || "📄"}</span>
             <span className="truncate text-xs flex-1">{page.title || "Untitled"}</span>
+            {page.is_draft && (
+              <span className="shrink-0 text-[9px] font-semibold text-[#6B778C] dark:text-slate-400 bg-[#F1F2F4] dark:bg-slate-700 px-1 py-px rounded border border-[#DFE1E6] dark:border-slate-600 leading-none">
+                DRAFT
+              </span>
+            )}
             {page.access_mode === "restricted" && (
               <span className="shrink-0">
                 <Lock className="h-3 w-3 text-amber-500" />
@@ -866,14 +872,44 @@ function PageItem({ page, allPages, spaceId, activePageId, depth, onRefresh, onC
         {/* Hover action buttons */}
         {!renaming && (
           <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover/item:opacity-100 transition-opacity pr-1">
-            {/* + child page */}
-            <button
-              onClick={() => onCreateChild?.(page.id)}
-              className="h-5 w-5 flex items-center justify-center rounded hover:bg-[#DFE1E6] dark:hover:bg-slate-600 transition-colors"
-              title="Add child page"
-            >
-              <Plus className="h-3 w-3 text-[#6B778C]" />
-            </button>
+            {/* + child page dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className="h-5 w-5 flex items-center justify-center rounded hover:bg-[#DFE1E6] dark:hover:bg-slate-600 transition-colors"
+                  title="Add child content"
+                >
+                  <Plus className="h-3 w-3 text-[#6B778C]" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" side="right" className="w-48">
+                <DropdownMenuItem
+                  onClick={() => onCreateChild?.(page.id)}
+                  className="flex items-center gap-2.5 cursor-pointer"
+                >
+                  <FileText className="h-4 w-4 text-[#42526E]" />
+                  <span>Page</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                {[
+                  { label: "Live Doc", icon: <PenLine className="h-4 w-4 text-[#97A0AF]" /> },
+                  { label: "Whiteboard", icon: <Eye className="h-4 w-4 text-[#97A0AF]" /> },
+                  { label: "Database", icon: <Database className="h-4 w-4 text-[#97A0AF]" /> },
+                  { label: "Smart Link", icon: <Link2 className="h-4 w-4 text-[#97A0AF]" /> },
+                  { label: "Folder", icon: <Folder className="h-4 w-4 text-[#97A0AF]" /> },
+                  { label: "Loom video", icon: <Video className="h-4 w-4 text-[#97A0AF]" /> },
+                ].map(({ label, icon }) => (
+                  <DropdownMenuItem
+                    key={label}
+                    onClick={() => toast(`${label} — coming soon`)}
+                    className="flex items-center gap-2.5 cursor-pointer text-[#97A0AF]"
+                  >
+                    {icon}
+                    <span>{label}</span>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
             {/* ... context menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

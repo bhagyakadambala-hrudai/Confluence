@@ -60,6 +60,7 @@ export async function PATCH(
   if (body.parent_id !== undefined) updates.parent_id = body.parent_id;
   if (body.labels !== undefined) updates.labels = body.labels;
   if (body.space_id !== undefined) updates.space_id = body.space_id;
+  if (body.is_draft !== undefined) updates.is_draft = body.is_draft;
 
   const { data, error } = await admin.from("pages").update(updates).eq("id", pageId).select().single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
