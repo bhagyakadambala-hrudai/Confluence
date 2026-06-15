@@ -17,6 +17,7 @@ import {
   AlignJustify,
 } from "lucide-react";
 import ShareModal from "@/components/pages/ShareModal";
+import PublishModal from "@/components/pages/PublishModal";
 import Link from "next/link";
 import { getInitials } from "@/lib/utils";
 import {
@@ -127,6 +128,7 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [editor, setEditor] = useState<EditorType | null>(null);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showPublishModal, setShowPublishModal] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSaved = useRef({ title: page.title, content: page.content || "" });
 
@@ -277,7 +279,7 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
             {/* Publish — split button */}
             <div className="flex items-center">
               <button
-                onClick={handlePublish}
+                onClick={() => setShowPublishModal(true)}
                 className="flex items-center gap-1 px-3 h-8 bg-[#0052CC] hover:bg-[#0065FF] text-white text-sm font-semibold rounded-l transition-colors"
               >
                 Publish…
@@ -436,6 +438,15 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
         spaceId={page.space_id}
         pageTitle={title || "Untitled"}
         onClose={() => setShowShareModal(false)}
+      />
+    )}
+    {showPublishModal && (
+      <PublishModal
+        page={page}
+        space={space}
+        parentPage={parentPage}
+        onPublish={handlePublish}
+        onClose={() => setShowPublishModal(false)}
       />
     )}
     </>
