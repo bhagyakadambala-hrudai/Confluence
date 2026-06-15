@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import DOMPurify from "isomorphic-dompurify";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatRelativeTime, getInitials } from "@/lib/utils";
 import {
@@ -356,7 +357,7 @@ export default function SpaceOverview({
             {space.description && space.description.startsWith("<") ? (
               <div
                 className="prose prose-sm dark:prose-invert max-w-none text-[#172B4D] dark:text-slate-200"
-                dangerouslySetInnerHTML={{ __html: space.description }}
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(space.description) }}
               />
             ) : (
               <>

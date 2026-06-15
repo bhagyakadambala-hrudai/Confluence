@@ -79,7 +79,9 @@ export default function SpaceSettingsPage() {
         const s = await spaceRes.json();
         setSpace(s);
         setName(s.name);
-        setDescription(s.description || "");
+        // Strip HTML tags — description should be plain text
+        const raw: string = s.description || "";
+        setDescription(raw.replace(/<[^>]*>/g, " ").replace(/\s{2,}/g, " ").trim());
         setEmoji(s.emoji || "📁");
       }
       if (membersRes.ok) setMembers(await membersRes.json());
