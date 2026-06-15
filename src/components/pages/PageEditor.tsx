@@ -11,7 +11,7 @@ import Toolbar from "@/components/editor/Toolbar";
 import { toast } from "sonner";
 import {
   Trash2, Loader2, MoreHorizontal, Link as LinkIcon,
-  Lock, Smile, Table2, Info, List, ChevronRight,
+  Lock, Table2, Info, List, ChevronRight,
   FileText, History, ChevronDown, Image as ImageIcon,
   Sparkles, ALargeSmall, ArrowLeftRight, CircleDot,
   AlignJustify,
@@ -375,10 +375,6 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
           <span className="text-sm text-[#6B778C] dark:text-slate-400">
             By <span className="text-[#172B4D] dark:text-slate-200 font-medium">{authorName}</span>
           </span>
-          <button className="flex items-center gap-1 px-2 py-0.5 rounded-full border border-[#DFE1E6] dark:border-slate-600 text-xs text-[#6B778C] dark:text-slate-400 hover:bg-[#F4F5F7] dark:hover:bg-slate-700 transition-colors">
-            <Smile className="h-3 w-3" />
-            Add a reaction
-          </button>
 
           {/* Labels */}
           {pageLabels.length > 0 && (

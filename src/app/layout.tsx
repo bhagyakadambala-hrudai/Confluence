@@ -7,7 +7,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Confluence Wiki",
+  title: "Confluence",
   description: "A powerful wiki and knowledge base for your team",
 };
 

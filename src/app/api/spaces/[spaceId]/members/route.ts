@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { lookupUserByEmail } from "@/lib/lookupUserByEmail";
 
-const VALID_ROLES = ["owner", "admin", "editor", "viewer"] as const;
+const VALID_ROLES = ["admin", "editor", "viewer"] as const; // "owner" cannot be assigned via API
 
 export async function GET(
   _req: Request,
@@ -40,6 +40,13 @@ export async function POST(
   }
 
   const admin = createAdminClient();
+
+  // Only space owner/admin can add members
+  const { data: myMembership } = await admin
+    .from("space_members").select("role").eq("space_id", spaceId).eq("user_id", user.id).single();
+  if (!myMembership || !["owner", "admin"].includes(myMembership.role)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const found = await lookupUserByEmail(admin, email);
   if (!found) {
@@ -137,11 +144,22 @@ export async function DELETE(
 
   const { userId } = await request.json();
   const admin = createAdminClient();
+
+  // Only owner/admin can remove members (users can remove themselves)
+  const { data: myMembership } = await admin
+    .from("space_members").select("role").eq("space_id", spaceId).eq("user_id", user.id).single();
+  if (!myMembership || (!["owner", "admin"].includes(myMembership.role) && user.id !== userId)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+  // Prevent removing the owner
+  const { data: targetMember } = await admin
+    .from("space_members").select("role").eq("space_id", spaceId).eq("user_id", userId).single();
+  if (targetMember?.role === "owner") {
+    return NextResponse.json({ error: "Cannot remove the space owner" }, { status: 403 });
+  }
+
   const { error } = await admin
-    .from("space_members")
-    .delete()
-    .eq("space_id", spaceId)
-    .eq("user_id", userId);
+    .from("space_members").delete().eq("space_id", spaceId).eq("user_id", userId);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ success: true });

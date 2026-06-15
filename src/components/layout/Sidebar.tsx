@@ -16,11 +16,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   ChevronRight, Plus, MoreHorizontal, Search,
-  LayoutGrid, BookOpen, Clock, Star, Globe, Layers,
-  Building2, Users, MoreHorizontal as More,
+  BookOpen, Clock, Star, Globe,
+  Users,
   FileText, ExternalLink, X, Filter, Lock,
   Settings, Trash2, Archive, Link2, Copy, Move, Pencil,
-  Eye, UserCog, BarChart2, Zap, Folder, AlignLeft,
+  Eye, UserCog, Folder,
   PenLine, Database, Video,
 } from "lucide-react";
 import { cn, getInitials, formatRelativeTime } from "@/lib/utils";
@@ -59,7 +59,6 @@ export default function Sidebar({ open, onToggle, user, width = 280 }: SidebarPr
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [showCreatePopup, setShowCreatePopup] = useState(false);
   const [spaceStarred, setSpaceStarred] = useState(false);
-  const [showMore, setShowMore] = useState(false);
   const createPopupRef = useRef<HTMLDivElement>(null);
 
   type FlyoutPanel = "recent" | "starred" | "spaces" | null;
@@ -232,9 +231,6 @@ export default function Sidebar({ open, onToggle, user, width = 280 }: SidebarPr
 
         {/* ── Logo bar ── */}
         <div className="flex items-center gap-1 px-2 h-12 border-b border-[#E8EAED] dark:border-[#30363d] shrink-0">
-          <button className="h-8 w-8 flex items-center justify-center rounded hover:bg-[#F1F2F4] dark:hover:bg-[#21262d] transition-colors shrink-0">
-            <LayoutGrid className="h-4 w-4 text-[#42526E] dark:text-slate-400" strokeWidth={1.8} />
-          </button>
           <Link href="/home" className="flex items-center gap-1.5 flex-1 min-w-0">
             <div className="h-6 w-6 bg-[#0052CC] rounded flex items-center justify-center shrink-0">
               <BookOpen className="h-3.5 w-3.5 text-white" strokeWidth={2.5} />
@@ -264,7 +260,6 @@ export default function Sidebar({ open, onToggle, user, width = 280 }: SidebarPr
             <NavItem icon={<Globe className="h-4 w-4" />} label="Spaces" href="/spaces"
               hasChevron expanded={flyout === "spaces"} onToggle={() => toggleFlyout("spaces")}
               active={flyout === "spaces" || pathname === "/spaces"} />
-            <NavItem icon={<Layers className="h-4 w-4" />} label="Apps" href="#" />
           </nav>
 
           {/* ── Starred spaces (only when NOT in a space) ── */}
@@ -343,21 +338,6 @@ export default function Sidebar({ open, onToggle, user, width = 280 }: SidebarPr
                       <UserCog className="h-4 w-4" />
                       Users
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="flex items-center gap-2 cursor-pointer text-[#97A0AF]">
-                      <Zap className="h-4 w-4" />
-                      Automation
-                      <span className="ml-auto text-[10px] bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 px-1.5 py-0.5 rounded font-semibold">PREMIUM</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="flex items-center gap-2 cursor-pointer text-[#97A0AF]">
-                      <AlignLeft className="h-4 w-4" />
-                      Content manager
-                      <span className="ml-auto text-[10px] bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 px-1.5 py-0.5 rounded font-semibold">PREMIUM</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="flex items-center gap-2 cursor-pointer text-[#97A0AF]">
-                      <BarChart2 className="h-4 w-4" />
-                      Analytics
-                      <span className="ml-auto text-[10px] bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 px-1.5 py-0.5 rounded font-semibold">PREMIUM</span>
-                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem className="flex items-center gap-2 cursor-pointer" onClick={() => router.push(`/spaces/${activeSpace.id}`)}>
                       <Settings className="h-4 w-4" />
@@ -378,14 +358,11 @@ export default function Sidebar({ open, onToggle, user, width = 280 }: SidebarPr
 
               {/* Shortcuts section */}
               <div className="px-3 py-1">
-                <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center mb-1">
                   <div className="flex items-center gap-1.5">
                     <Link2 className="h-3.5 w-3.5 text-[#6B778C]" />
                     <span className="text-xs font-semibold text-[#6B778C] dark:text-slate-400">Shortcuts</span>
                   </div>
-                  <button className="h-5 w-5 flex items-center justify-center rounded hover:bg-[#F1F2F4] dark:hover:bg-[#21262d] transition-colors">
-                    <Plus className="h-3 w-3 text-[#6B778C]" />
-                  </button>
                 </div>
                 <p className="text-xs text-[#97A0AF] dark:text-slate-500 pl-5">No shortcuts in this space</p>
               </div>
@@ -485,17 +462,6 @@ export default function Sidebar({ open, onToggle, user, width = 280 }: SidebarPr
                 )}
               </div>
 
-              {/* Calendars */}
-              <div className="flex items-center gap-2 px-3 py-2 text-sm text-[#6B778C] dark:text-slate-400 cursor-default select-none">
-                <svg viewBox="0 0 16 16" className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.6">
-                  <rect x="2" y="3" width="12" height="11" rx="1.5" />
-                  <line x1="2" y1="7" x2="14" y2="7" strokeLinecap="round" />
-                  <line x1="5" y1="1" x2="5" y2="5" strokeLinecap="round" />
-                  <line x1="11" y1="1" x2="11" y2="5" strokeLinecap="round" />
-                </svg>
-                <span className="flex-1 text-sm text-[#172B4D] dark:text-slate-300">Calendars</span>
-                <span className="text-[10px] bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 px-1.5 py-0.5 rounded font-semibold">PREMIUM</span>
-              </div>
             </div>
           ) : null}
 
@@ -504,34 +470,10 @@ export default function Sidebar({ open, onToggle, user, width = 280 }: SidebarPr
 
           {/* ── Bottom links ── */}
           <nav className="py-1">
-            <BottomLink icon={<Building2 className="h-4 w-4" />} label="Company hub" showExternal />
             <BottomLink icon={<Users className="h-4 w-4" />} label="Teams" href="/teams" showExternal />
-            <div>
-              <div
-                onClick={() => setShowMore((v) => !v)}
-                className="flex items-center gap-3 px-3 py-2 text-sm text-[#172B4D] dark:text-slate-300 hover:bg-[#F1F2F4] dark:hover:bg-[#21262d] cursor-pointer transition-colors"
-              >
-                <span className="text-[#6B778C] dark:text-slate-400 shrink-0"><More className="h-4 w-4" /></span>
-                <span className="flex-1">More</span>
-                <ChevronRight className={cn("h-3.5 w-3.5 text-[#6B778C] transition-transform", showMore && "rotate-90")} />
-              </div>
-              {showMore && (
-                <div className="pl-4 pb-1">
-                  <BottomLink icon={<FileText className="h-4 w-4" />} label="Drafts" href="#" />
-                  <BottomLink icon={<svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6"><rect x="2" y="3" width="12" height="10" rx="1.5"/><line x1="5" y1="7" x2="11" y2="7" strokeLinecap="round"/><line x1="5" y1="10" x2="8" y2="10" strokeLinecap="round"/></svg>} label="Tasks" href="#" />
-                  <BottomLink icon={<Settings className="h-4 w-4" />} label="Customize sidebar" href="#" />
-                </div>
-              )}
-            </div>
           </nav>
         </ScrollArea>
 
-        {/* ── Invite people ── */}
-        <div className="border-t border-[#E8EAED] dark:border-[#30363d] p-3">
-          <button className="w-full py-2 text-sm font-medium text-[#172B4D] dark:text-slate-300 border border-[#E8EAED] dark:border-[#30363d] rounded hover:bg-[#F1F2F4] dark:hover:bg-[#21262d] transition-colors">
-            Invite people
-          </button>
-        </div>
       </aside>
 
       <CreateSpaceModal

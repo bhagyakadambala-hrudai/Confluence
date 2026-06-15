@@ -16,7 +16,7 @@ import SearchModal from "@/components/search/SearchModal";
 import CreateSpaceModal from "@/components/spaces/CreateSpaceModal";
 import {
   Moon, Sun, Search, LogOut, Settings, User as UserIcon,
-  Plus, HelpCircle, FileText, LayoutTemplate, Globe, PenLine,
+  Plus, FileText, LayoutTemplate, Globe, PenLine,
   Database, Link2, Users,
 } from "lucide-react";
 import NotificationDropdown from "@/components/layout/NotificationDropdown";
@@ -147,10 +147,6 @@ export default function Navbar({ user }: NavbarProps) {
           </DropdownMenu>
 
           <NotificationDropdown />
-
-          <button className="h-8 w-8 flex items-center justify-center text-[#42526E] dark:text-slate-400 hover:bg-[#F1F2F4] dark:hover:bg-[#21262d] rounded transition-colors">
-            <HelpCircle className="h-4 w-4" />
-          </button>
 
           {mounted && (
             <button

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Star, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { CONFLUENCE_TEMPLATES, TEMPLATE_CATEGORIES, type ConfluenceTemplate } from "@/components/templates/TemplateData";
 import { toast } from "sonner";
 
@@ -183,9 +183,6 @@ export default function TemplatesPage() {
                 className="flex-1 h-8 bg-[#0052CC] hover:bg-[#0065FF] text-white rounded text-sm font-semibold transition-colors disabled:opacity-50"
               >
                 {creating === selectedTemplate.id ? "Creating..." : "Use template"}
-              </button>
-              <button className="h-8 w-8 flex items-center justify-center text-[#6B778C] hover:text-[#172B4D] dark:hover:text-white hover:bg-[#F4F5F7] dark:hover:bg-slate-700 rounded transition-colors">
-                <Star className="h-4 w-4" />
               </button>
             </div>
 

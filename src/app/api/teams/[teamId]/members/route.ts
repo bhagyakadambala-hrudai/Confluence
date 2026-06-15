@@ -23,7 +23,7 @@ export async function GET(
   const userIds = rows.map((r: { user_id: string }) => r.user_id);
   const { data: profiles } = await admin
     .from("profiles")
-    .select("id, full_name, avatar_url, email")
+    .select("id, full_name, avatar_url")
     .in("id", userIds);
 
   const profileMap = Object.fromEntries((profiles || []).map((p: { id: string }) => [p.id, p]));

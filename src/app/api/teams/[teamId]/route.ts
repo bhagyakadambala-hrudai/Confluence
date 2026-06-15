@@ -15,6 +15,13 @@ export async function GET(
   const { data: team } = await admin.from("teams").select("*").eq("id", teamId).single();
   if (!team) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
+  // Only owner or team members may view team details
+  const isOwner = team.owner_id === user.id;
+  if (!isOwner) {
+    const { data: membership } = await admin.from("team_members").select("id").eq("team_id", teamId).eq("user_id", user.id).single();
+    if (!membership) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   // Fetch team_members rows
   const { data: memberRows } = await admin
     .from("team_members")
@@ -29,7 +36,7 @@ export async function GET(
 
   const { data: profiles } = await admin
     .from("profiles")
-    .select("id, full_name, avatar_url, email")
+    .select("id, full_name, avatar_url")
     .in("id", userIds);
 
   const profileMap = Object.fromEntries((profiles || []).map((p: { id: string }) => [p.id, p]));

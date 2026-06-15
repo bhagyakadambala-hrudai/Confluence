@@ -26,6 +26,19 @@ export async function PATCH(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const admin = createAdminClient();
+
+  // Only owner/admin can modify a space
+  const { data: membership } = await admin
+    .from("space_members")
+    .select("role")
+    .eq("space_id", spaceId)
+    .eq("user_id", user.id)
+    .single();
+  if (!membership || !["owner", "admin"].includes(membership.role)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const body = await request.json();
   const updateData: Record<string, unknown> = {};
   if (body.name !== undefined) updateData.name = body.name;
@@ -33,8 +46,6 @@ export async function PATCH(
   if (body.emoji !== undefined) updateData.emoji = body.emoji;
   if (body.overview_content !== undefined) updateData.overview_content = body.overview_content;
   if (body.status !== undefined) updateData.status = body.status;
-
-  const admin = createAdminClient();
   const { data, error } = await admin
     .from("spaces")
     .update(updateData)

@@ -93,7 +93,7 @@ export default function NotificationDropdown() {
           setOpen(!open);
           if (!open) loadNotifications();
         }}
-        className="h-8 w-8 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 rounded transition-colors relative"
+        className="h-8 w-8 flex items-center justify-center text-[#42526E] dark:text-slate-400 hover:bg-[#F1F2F4] dark:hover:bg-[#21262d] rounded transition-colors relative"
       >
         <Bell className="h-4 w-4" />
         {unreadCount > 0 && (
