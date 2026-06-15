@@ -178,12 +178,7 @@ export default function Navbar({ user }: NavbarProps) {
               placeholder="Search"
               className="flex-1 bg-transparent outline-none text-sm text-[#172B4D] dark:text-slate-200 placeholder:text-[#6B778C] dark:placeholder:text-slate-400"
             />
-            {loading
-              ? <Loader2 className="h-3.5 w-3.5 animate-spin text-[#6B778C] shrink-0" />
-              : !searchFocus && (
-                <span className="text-xs bg-white dark:bg-[#161B22] border border-[#DFE1E6] dark:border-[#30363d] px-1.5 py-0.5 rounded text-[#6B778C] dark:text-slate-400 font-mono">⌘K</span>
-              )
-            }
+            {loading && <Loader2 className="h-3.5 w-3.5 animate-spin text-[#6B778C] shrink-0" />}
           </div>
 
           {/* Dropdown results */}
@@ -282,11 +277,6 @@ export default function Navbar({ user }: NavbarProps) {
                   })}
                 </div>
               )}
-              <div className="px-4 py-2 border-t border-[#F4F5F7] dark:border-[#30363d] flex items-center gap-4 text-xs text-[#97A0AF] dark:text-slate-500 bg-[#F7F8F9] dark:bg-[#0d1117]">
-                <span>↑↓ navigate</span>
-                <span>↵ open</span>
-                <span>esc close</span>
-              </div>
             </div>
           )}
         </div>
