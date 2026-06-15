@@ -11,16 +11,23 @@ export async function GET(request: Request) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const admin = createAdminClient();
-  let query = admin
-    .from("pages")
-    .select("id, title, emoji, parent_id, space_id, position, is_draft, created_at, updated_at")
-    .order("position", { ascending: true });
 
-  if (spaceId) query = query.eq("space_id", spaceId);
+  // Try to include is_draft; fall back if column doesn't exist yet (migration not run)
+  for (const cols of [
+    "id, title, emoji, parent_id, space_id, position, is_draft, created_at, updated_at",
+    "id, title, emoji, parent_id, space_id, position, created_at, updated_at",
+  ]) {
+    let query = admin.from("pages").select(cols).order("position", { ascending: true });
+    if (spaceId) query = query.eq("space_id", spaceId);
+    const { data, error } = await query;
+    if (!error) return NextResponse.json(data);
+    if (!error.message.includes("is_draft")) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    // is_draft column missing — retry without it
+  }
 
-  const { data, error } = await query;
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(data);
+  return NextResponse.json([]);
 }
 
 export async function POST(request: Request) {
@@ -40,21 +47,28 @@ export async function POST(request: Request) {
     .eq("space_id", space_id)
     .is("parent_id", parent_id || null);
 
-  const { data: page, error } = await admin
-    .from("pages")
-    .insert({
-      space_id,
-      parent_id: parent_id || null,
-      title: title || "Untitled",
-      content: content || "",
-      emoji: emoji || "📄",
-      author_id: user.id,
-      position: (count || 0) + 1,
-      is_draft: true,
-    })
-    .select()
-    .single();
+  const baseInsert = {
+    space_id,
+    parent_id: parent_id || null,
+    title: title || "Untitled",
+    content: content || "",
+    emoji: emoji || "📄",
+    author_id: user.id,
+    position: (count || 0) + 1,
+  };
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(page, { status: 201 });
+  // Try inserting with is_draft; fall back if column doesn't exist yet
+  for (const payload of [
+    { ...baseInsert, is_draft: true },
+    baseInsert,
+  ]) {
+    const { data: page, error } = await admin.from("pages").insert(payload).select().single();
+    if (!error) return NextResponse.json(page, { status: 201 });
+    if (!error.message.includes("is_draft")) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    // is_draft column missing — retry without it
+  }
+
+  return NextResponse.json({ error: "Failed to create page" }, { status: 500 });
 }

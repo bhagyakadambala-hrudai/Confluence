@@ -63,7 +63,16 @@ export async function PATCH(
   if (body.is_draft !== undefined) updates.is_draft = body.is_draft;
 
   const { data, error } = await admin.from("pages").update(updates).eq("id", pageId).select().single();
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    // If is_draft column doesn't exist yet, retry without it
+    if (error.message.includes("is_draft") && updates.is_draft !== undefined) {
+      delete updates.is_draft;
+      const { data: d2, error: e2 } = await admin.from("pages").update(updates).eq("id", pageId).select().single();
+      if (e2) return NextResponse.json({ error: e2.message }, { status: 500 });
+      return NextResponse.json(d2);
+    }
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
   return NextResponse.json(data);
 }
 
