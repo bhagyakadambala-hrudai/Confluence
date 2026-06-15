@@ -448,7 +448,7 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
     )}
     {showPublishModal && (
       <PublishModal
-        page={page}
+        page={{ ...page, content }}
         space={space}
         parentPage={parentPage}
         onPublish={handlePublish}
