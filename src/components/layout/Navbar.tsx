@@ -43,16 +43,44 @@ export default function Navbar({ user }: NavbarProps) {
   const [mounted, setMounted] = useState(false);
 
   // ── Inline search state ──
-  const [query, setQuery]         = useState("");
-  const [results, setResults]     = useState<SearchResult[]>([]);
+  const [query, setQuery]             = useState("");
+  const [results, setResults]         = useState<SearchResult[]>([]);
   const [searchFocus, setSearchFocus] = useState(false);
-  const [loading, setLoading]     = useState(false);
-  const [selected, setSelected]   = useState(0);
+  const [loading, setLoading]         = useState(false);
+  const [selected, setSelected]       = useState(0);
+  const [recentPages, setRecentPages] = useState<SearchResult[]>([]);
+  const [spaces, setSpaces]           = useState<{ id: string; name: string; emoji: string }[]>([]);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef    = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const showDropdown = searchFocus && (query.length >= 2 || results.length > 0);
+  const showDropdown = searchFocus;
+
+  // Load recently viewed pages + spaces once on focus
+  const loadRecents = useCallback(async () => {
+    const [pagesRes, spacesRes] = await Promise.all([
+      fetch("/api/pages?limit=10"),
+      fetch("/api/spaces"),
+    ]);
+    if (pagesRes.ok) {
+      const data = await pagesRes.json();
+      setRecentPages(
+        (Array.isArray(data) ? data : [])
+          .sort((a: { updated_at: string }, b: { updated_at: string }) =>
+            new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+          )
+          .slice(0, 8)
+          .map((p: { id: string; title: string; emoji: string; space_id: string; spaces?: { name: string; emoji: string } }) => ({
+            id: p.id, title: p.title, emoji: p.emoji,
+            space_id: p.space_id, spaces: p.spaces ?? null,
+          }))
+      );
+    }
+    if (spacesRes.ok) {
+      const data = await spacesRes.json();
+      setSpaces((Array.isArray(data) ? data : []).slice(0, 6));
+    }
+  }, []);
 
   const doSearch = useCallback((q: string) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -79,7 +107,7 @@ export default function Navbar({ user }: NavbarProps) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // Close dropdown when clicking outside
+  // Close dropdown on outside click
   useEffect(() => {
     function onMouseDown(e: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -90,26 +118,34 @@ export default function Navbar({ user }: NavbarProps) {
     return () => document.removeEventListener("mousedown", onMouseDown);
   }, []);
 
-  function navigateToResult(result: SearchResult) {
-    router.push(`/spaces/${result.space_id}/pages/${result.id}/edit`);
+  function handleFocus() {
+    setSearchFocus(true);
+    if (recentPages.length === 0) loadRecents();
+  }
+
+  function closeSearch() {
     setQuery("");
     setResults([]);
     setSearchFocus(false);
+  }
+
+  function navigateToPage(spaceId: string, pageId: string) {
+    router.push(`/spaces/${spaceId}/pages/${pageId}/edit`);
+    closeSearch();
+  }
+
+  function navigateToSpace(spaceId: string) {
+    router.push(`/spaces/${spaceId}`);
+    closeSearch();
   }
 
   function handleSearchKeyDown(e: React.KeyboardEvent) {
     const flat = results;
     if (e.key === "ArrowDown") { e.preventDefault(); setSelected((s) => Math.min(s + 1, flat.length - 1)); }
     else if (e.key === "ArrowUp") { e.preventDefault(); setSelected((s) => Math.max(s - 1, 0)); }
-    else if (e.key === "Enter" && flat[selected]) { navigateToResult(flat[selected]); }
-    else if (e.key === "Escape") { setSearchFocus(false); inputRef.current?.blur(); }
+    else if (e.key === "Enter" && flat[selected]) { navigateToPage(flat[selected].space_id, flat[selected].id); }
+    else if (e.key === "Escape") { closeSearch(); inputRef.current?.blur(); }
   }
-
-  const grouped = results.reduce<Record<string, SearchResult[]>>((acc, r) => {
-    if (!acc[r.space_id]) acc[r.space_id] = [];
-    acc[r.space_id].push(r);
-    return acc;
-  }, {});
 
   async function handleSignOut() {
     await supabase.auth.signOut();
@@ -137,7 +173,7 @@ export default function Navbar({ user }: NavbarProps) {
               ref={inputRef}
               value={query}
               onChange={(e) => { setQuery(e.target.value); setSelected(0); }}
-              onFocus={() => setSearchFocus(true)}
+              onFocus={handleFocus}
               onKeyDown={handleSearchKeyDown}
               placeholder="Search"
               className="flex-1 bg-transparent outline-none text-sm text-[#172B4D] dark:text-slate-200 placeholder:text-[#6B778C] dark:placeholder:text-slate-400"
@@ -154,12 +190,69 @@ export default function Navbar({ user }: NavbarProps) {
           {showDropdown && (
             <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#161B22] border border-[#DFE1E6] dark:border-[#30363d] rounded-lg shadow-lg z-50 overflow-hidden">
               {query.length < 2 ? (
-                <p className="py-8 text-center text-sm text-[#6B778C]">Type at least 2 characters to search</p>
+                /* Empty state: recently viewed + spaces */
+                <div className="max-h-96 overflow-y-auto">
+                  {recentPages.length > 0 && (
+                    <div className="p-2">
+                      <p className="px-2 py-1.5 text-[11px] font-semibold text-[#6B778C] dark:text-slate-400 uppercase tracking-wider">
+                        Recently viewed
+                      </p>
+                      {recentPages.map((page) => (
+                        <button
+                          key={page.id}
+                          onMouseDown={() => navigateToPage(page.space_id, page.id)}
+                          className="w-full flex items-center gap-3 px-2 py-2 rounded-md text-left hover:bg-[#F4F5F7] dark:hover:bg-[#21262d] transition-colors"
+                        >
+                          <FileText className="h-4 w-4 text-[#6B778C] dark:text-slate-400 shrink-0" />
+                          <span className="flex-1 text-sm text-[#172B4D] dark:text-slate-200 truncate">
+                            {page.title || "Untitled"}
+                          </span>
+                          {page.spaces?.name && (
+                            <span className="text-xs text-[#6B778C] dark:text-slate-400 shrink-0 ml-2 truncate max-w-[120px]">
+                              {page.spaces.name}
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {spaces.length > 0 && (
+                    <div className={`p-2 ${recentPages.length > 0 ? "border-t border-[#F4F5F7] dark:border-[#30363d]" : ""}`}>
+                      <p className="px-2 py-1.5 text-[11px] font-semibold text-[#6B778C] dark:text-slate-400 uppercase tracking-wider">
+                        Spaces
+                      </p>
+                      {spaces.map((space) => (
+                        <button
+                          key={space.id}
+                          onMouseDown={() => navigateToSpace(space.id)}
+                          className="w-full flex items-center gap-3 px-2 py-2 rounded-md text-left hover:bg-[#F4F5F7] dark:hover:bg-[#21262d] transition-colors"
+                        >
+                          <div className="h-6 w-6 rounded bg-[#DEEBFF] dark:bg-blue-900/30 flex items-center justify-center text-sm shrink-0">
+                            {space.emoji || "🌐"}
+                          </div>
+                          <span className="text-sm text-[#172B4D] dark:text-slate-200 truncate">
+                            {space.name}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {recentPages.length === 0 && spaces.length === 0 && (
+                    <p className="py-8 text-center text-sm text-[#6B778C]">Start typing to search</p>
+                  )}
+                </div>
               ) : results.length === 0 && !loading ? (
                 <p className="py-8 text-center text-sm text-[#6B778C]">No results for &quot;{query}&quot;</p>
               ) : (
                 <div className="max-h-80 overflow-y-auto p-2">
-                  {Object.entries(grouped).map(([spaceId, pages]) => {
+                  {Object.entries(
+                    results.reduce<Record<string, SearchResult[]>>((acc, r) => {
+                      const key = r.space_id || "unknown";
+                      if (!acc[key]) acc[key] = [];
+                      acc[key].push(r);
+                      return acc;
+                    }, {})
+                  ).map(([spaceId, pages]) => {
                     const space = pages[0]?.spaces;
                     return (
                       <div key={spaceId} className="mb-2">
@@ -172,7 +265,7 @@ export default function Navbar({ user }: NavbarProps) {
                           return (
                             <button
                               key={result.id}
-                              onMouseDown={() => navigateToResult(result)}
+                              onMouseDown={() => navigateToPage(result.space_id, result.id)}
                               className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-left transition-colors text-sm ${
                                 idx === selected
                                   ? "bg-[#DEEBFF] dark:bg-blue-900/30 text-[#0052CC] dark:text-blue-300"
