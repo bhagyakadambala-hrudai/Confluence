@@ -71,7 +71,21 @@ export default function Navbar({ user }: NavbarProps) {
     });
   }, []);
 
-  const hasSpaces = spacesLoaded && spaces.length > 0;
+  // Show simple menu ONLY after we've confirmed no spaces exist.
+  // While loading, default to full menu to prevent glitch from simple→full.
+  const noSpaces = spacesLoaded && spaces.length === 0;
+
+  function handleCreatePage() {
+    if (noSpaces) {
+      toast.error("Create a space first to add pages.");
+      return;
+    }
+    if (!currentSpaceId) {
+      toast.error("We're unable to create for you. Open a space first to create a page.");
+      return;
+    }
+    router.push(`/pages/new?space_id=${currentSpaceId}`);
+  }
 
   // Load recently viewed pages + spaces once on search focus
   const loadRecents = useCallback(async () => {
@@ -308,82 +322,53 @@ export default function Navbar({ user }: NavbarProps) {
                 <span className="hidden sm:block">Create</span>
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48 py-1">
-              {!hasSpaces ? (
-                /* No spaces yet — show only Page (blocked) + Space */
+            <DropdownMenuContent align="end" className="w-44 py-1">
+              {noSpaces ? (
+                /* Confirmed no spaces — show only Page (blocked) + Space */
                 <>
-                  <DropdownMenuItem
-                    onClick={() => toast.error("We're unable to create for you. Create a space first to add pages.")}
-                    className="flex items-center gap-2.5 px-3 py-2 cursor-pointer"
-                  >
-                    <FileText className="h-4 w-4 text-[#42526E]" />
+                  <DropdownMenuItem onClick={handleCreatePage} className="flex items-center gap-2.5 px-3 py-2 cursor-pointer">
+                    <FileText className="h-4 w-4 text-[#42526E] dark:text-slate-400 shrink-0" />
                     <span className="text-sm text-[#172B4D] dark:text-slate-200">Page</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => setCreateSpaceOpen(true)}
-                    className="flex items-center gap-2.5 px-3 py-2 cursor-pointer"
-                  >
-                    <Globe className="h-4 w-4 text-[#42526E]" />
+                  <DropdownMenuItem onClick={() => setCreateSpaceOpen(true)} className="flex items-center gap-2.5 px-3 py-2 cursor-pointer">
+                    <Globe className="h-4 w-4 text-[#42526E] dark:text-slate-400 shrink-0" />
                     <span className="text-sm text-[#172B4D] dark:text-slate-200">Space</span>
                   </DropdownMenuItem>
                 </>
               ) : (
-                /* Has spaces — full create menu */
+                /* Has spaces (or still loading — default to full to prevent glitch) */
                 <>
-                  <DropdownMenuItem onClick={() => router.push("/templates")} className="flex items-center gap-3 px-3 py-2 cursor-pointer">
-                    <div className="h-7 w-7 rounded bg-[#EAE6FF] flex items-center justify-center shrink-0">
-                      <LayoutTemplate className="h-4 w-4 text-[#6554C0]" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-[#172B4D] dark:text-slate-200">Start from template</p>
-                      <p className="text-xs text-[#6B778C]">Ready-made page layouts</p>
-                    </div>
+                  <DropdownMenuItem onClick={handleCreatePage} className="flex items-center gap-2.5 px-3 py-2 cursor-pointer">
+                    <FileText className="h-4 w-4 text-[#42526E] dark:text-slate-400 shrink-0" />
+                    <span className="text-sm text-[#172B4D] dark:text-slate-200">Live Doc</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push(currentSpaceId ? `/pages/new?space_id=${currentSpaceId}` : "/pages/new")} className="flex items-center gap-3 px-3 py-2 cursor-pointer">
-                    <div className="h-7 w-7 rounded bg-[#DEEBFF] flex items-center justify-center shrink-0">
-                      <PenLine className="h-4 w-4 text-[#0052CC]" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-[#172B4D] dark:text-slate-200">Page</p>
-                      <p className="text-xs text-[#6B778C]">Blank document</p>
-                    </div>
+                  <DropdownMenuItem onClick={handleCreatePage} className="flex items-center gap-2.5 px-3 py-2 cursor-pointer">
+                    <PenLine className="h-4 w-4 text-[#42526E] dark:text-slate-400 shrink-0" />
+                    <span className="text-sm text-[#172B4D] dark:text-slate-200">Page</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 cursor-pointer">
-                    <div className="h-7 w-7 rounded bg-[#E3FCEF] flex items-center justify-center shrink-0">
-                      <FileText className="h-4 w-4 text-[#00875A]" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-[#172B4D] dark:text-slate-200">Live Doc</p>
-                      <p className="text-xs text-[#6B778C]">Collaborative document</p>
-                    </div>
+                  <DropdownMenuItem className="flex items-center gap-2.5 px-3 py-2 cursor-pointer">
+                    <LayoutTemplate className="h-4 w-4 text-[#42526E] dark:text-slate-400 shrink-0" />
+                    <span className="text-sm text-[#172B4D] dark:text-slate-200">Whiteboard</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 cursor-pointer">
-                    <div className="h-7 w-7 rounded bg-[#FFFAE6] flex items-center justify-center shrink-0">
-                      <Database className="h-4 w-4 text-[#FF8B00]" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-[#172B4D] dark:text-slate-200">Database</p>
-                      <p className="text-xs text-[#6B778C]">Structured data table</p>
-                    </div>
+                  <DropdownMenuItem className="flex items-center gap-2.5 px-3 py-2 cursor-pointer">
+                    <Database className="h-4 w-4 text-[#42526E] dark:text-slate-400 shrink-0" />
+                    <span className="text-sm text-[#172B4D] dark:text-slate-200">Database</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 cursor-pointer">
-                    <div className="h-7 w-7 rounded bg-[#FFEBE6] flex items-center justify-center shrink-0">
-                      <Link2 className="h-4 w-4 text-[#DE350B]" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-[#172B4D] dark:text-slate-200">Smart Link</p>
-                      <p className="text-xs text-[#6B778C]">Link with rich preview</p>
-                    </div>
+                  <DropdownMenuItem className="flex items-center gap-2.5 px-3 py-2 cursor-pointer">
+                    <Link2 className="h-4 w-4 text-[#42526E] dark:text-slate-400 shrink-0" />
+                    <span className="text-sm text-[#172B4D] dark:text-slate-200">Smart Link</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setCreateSpaceOpen(true)} className="flex items-center gap-2.5 px-3 py-2 cursor-pointer">
+                    <Globe className="h-4 w-4 text-[#42526E] dark:text-slate-400 shrink-0" />
+                    <span className="text-sm text-[#172B4D] dark:text-slate-200">Space</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setCreateSpaceOpen(true)} className="flex items-center gap-3 px-3 py-2 cursor-pointer">
-                    <div className="h-7 w-7 rounded bg-[#F4F5F7] flex items-center justify-center shrink-0">
-                      <Globe className="h-4 w-4 text-[#42526E]" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-[#172B4D] dark:text-slate-200">Space</p>
-                      <p className="text-xs text-[#6B778C]">New team workspace</p>
-                    </div>
+                  <div className="px-3 py-1">
+                    <p className="text-[11px] font-semibold text-[#6B778C] dark:text-slate-500 uppercase tracking-wide">Suggestions</p>
+                  </div>
+                  <DropdownMenuItem className="flex items-center gap-2.5 px-3 py-2 cursor-pointer" onClick={() => router.push("/templates")}>
+                    <FileText className="h-4 w-4 text-[#42526E] dark:text-slate-400 shrink-0" />
+                    <span className="text-sm text-[#172B4D] dark:text-slate-200">From template</span>
                   </DropdownMenuItem>
                 </>
               )}
