@@ -291,6 +291,10 @@ function CreateTeamModal({ onClose, onCreated }: { onClose: () => void; onCreate
 
   async function handleCreate() {
     if (!name.trim()) return;
+    if (emails.length === 0) {
+      toast.error("Add at least 1 member to create a team.");
+      return;
+    }
     setCreating(true);
 
     const resp = await fetch("/api/teams", {
@@ -405,7 +409,7 @@ function CreateTeamModal({ onClose, onCreated }: { onClose: () => void; onCreate
 
           {/* Invite members */}
           <div>
-            <label className="block text-xs font-semibold text-[#172B4D] dark:text-slate-200 mb-1.5">Invite members <span className="font-normal text-[#97A0AF]">(optional)</span></label>
+            <label className="block text-xs font-semibold text-[#172B4D] dark:text-slate-200 mb-1.5">Invite members <span className="text-red-500">*</span></label>
             <div className="flex gap-2">
               <div className="flex-1 flex items-center gap-2 px-3 h-9 rounded-lg border border-[#DFE1E6] dark:border-slate-600 bg-white dark:bg-slate-800 focus-within:ring-2 focus-within:ring-[#0052CC] focus-within:border-transparent transition-all">
                 <Mail className="h-3.5 w-3.5 text-[#6B778C] shrink-0" />
@@ -449,7 +453,7 @@ function CreateTeamModal({ onClose, onCreated }: { onClose: () => void; onCreate
           <button onClick={onClose} className="px-4 py-2 text-sm text-[#42526E] dark:text-slate-300 hover:bg-[#F4F5F7] dark:hover:bg-slate-700 rounded-lg transition-colors">Cancel</button>
           <button
             onClick={handleCreate}
-            disabled={creating || !name.trim()}
+            disabled={creating || !name.trim() || emails.length === 0}
             className="px-4 py-2 text-sm font-semibold text-white bg-[#0052CC] hover:bg-[#0065FF] rounded-lg transition-colors disabled:opacity-50"
           >
             {creating ? "Creating…" : "Create team"}
