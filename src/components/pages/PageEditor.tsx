@@ -164,7 +164,14 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
   }, [title, content, save]);
 
   async function handlePublish() {
-    await save(title, content);
+    let effectiveTitle = title.trim();
+    if (!effectiveTitle) {
+      const now = new Date();
+      const pad = (n: number) => String(n).padStart(2, "0");
+      effectiveTitle = `Page ${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+      setTitle(effectiveTitle);
+    }
+    await save(effectiveTitle, content);
     // Mark page as published (not a draft)
     await fetch(`/api/pages/${page.id}`, {
       method: "PATCH",
@@ -174,7 +181,7 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
     const resp = await fetch(`/api/pages/${page.id}/versions`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, content }),
+      body: JSON.stringify({ title: effectiveTitle, content }),
     });
     if (resp.ok) toast.success("Page published!");
     else toast.error("Failed to publish");
@@ -448,7 +455,7 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
     )}
     {showPublishModal && (
       <PublishModal
-        page={{ ...page, content }}
+        page={{ ...page, title, content }}
         space={space}
         parentPage={parentPage}
         onPublish={handlePublish}
