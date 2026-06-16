@@ -69,52 +69,50 @@ function QuickInsertBar({
 }) {
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 z-30 border-t border-[#DFE1E6] dark:border-slate-700 bg-white dark:bg-[#1B2A3B] select-none"
+      className="rounded-xl border border-[#DFE1E6] dark:border-slate-700 bg-white dark:bg-[#1e2d3d] overflow-hidden select-none"
       onMouseLeave={onLeave}
     >
-      <div className="max-w-4xl mx-auto">
-        <div className="flex items-center flex-wrap gap-0.5 px-4 py-1.5 border-b border-[#F4F5F7] dark:border-slate-700">
-          {TEMPLATES_BAR.map((item) => (
-            <button
-              key={item.label}
-              onMouseEnter={() => onHover(TEMPLATE_PREVIEWS[item.key] || "")}
-              onMouseDown={(e) => { e.preventDefault(); onInsert("template:" + item.key); }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-[#42526E] dark:text-slate-300 hover:bg-[#F4F5F7] dark:hover:bg-slate-700 transition-colors"
-            >
-              <span className="text-[#6B778C]">{item.icon}</span>
-              {item.label}
-            </button>
-          ))}
-          <Link
-            href="/templates"
-            className="flex items-center gap-1 px-3 py-1.5 rounded-md text-sm text-[#42526E] dark:text-slate-300 hover:bg-[#F4F5F7] dark:hover:bg-slate-700 transition-colors ml-auto"
-          >
-            All templates <ChevronRight className="h-3 w-3" />
-          </Link>
-        </div>
-        <div className="flex items-center flex-wrap gap-0.5 px-4 py-1.5">
-          {[
-            { label: "Table", icon: <Table2 className="h-3.5 w-3.5" />, action: "table", key: "Table" },
-            { label: "Info panel", icon: <Info className="h-3.5 w-3.5" />, action: "info", key: "Info panel" },
-            { label: "Table of contents", icon: <List className="h-3.5 w-3.5" />, action: "toc", key: "Table of contents" },
-          ].map((item) => (
-            <button
-              key={item.label}
-              onMouseEnter={() => onHover(TEMPLATE_PREVIEWS[item.key] || "")}
-              onMouseDown={(e) => { e.preventDefault(); onInsert(item.action); }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-[#42526E] dark:text-slate-300 hover:bg-[#F4F5F7] dark:hover:bg-slate-700 transition-colors"
-            >
-              <span className="text-[#6B778C]">{item.icon}</span>
-              {item.label}
-            </button>
-          ))}
+      <div className="flex items-center flex-wrap gap-0.5 px-2 py-1.5 border-b border-[#F4F5F7] dark:border-slate-700">
+        {TEMPLATES_BAR.map((item) => (
           <button
-            onMouseDown={(e) => { e.preventDefault(); onInsert("more"); }}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-md text-sm text-[#42526E] dark:text-slate-300 hover:bg-[#F4F5F7] dark:hover:bg-slate-700 transition-colors ml-auto"
+            key={item.label}
+            onMouseEnter={() => onHover(TEMPLATE_PREVIEWS[item.key] || "")}
+            onMouseDown={(e) => { e.preventDefault(); onInsert("template:" + item.key); }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-[#42526E] dark:text-slate-300 hover:bg-[#F4F5F7] dark:hover:bg-slate-700 transition-colors"
           >
-            More elements <ChevronRight className="h-3 w-3" />
+            <span className="text-[#6B778C]">{item.icon}</span>
+            {item.label}
           </button>
-        </div>
+        ))}
+        <Link
+          href="/templates"
+          className="flex items-center gap-1 px-3 py-1.5 rounded-md text-sm text-[#42526E] dark:text-slate-300 hover:bg-[#F4F5F7] dark:hover:bg-slate-700 transition-colors ml-auto"
+        >
+          All templates <ChevronRight className="h-3 w-3" />
+        </Link>
+      </div>
+      <div className="flex items-center flex-wrap gap-0.5 px-2 py-1.5">
+        {[
+          { label: "Table", icon: <Table2 className="h-3.5 w-3.5" />, action: "table", key: "Table" },
+          { label: "Info panel", icon: <Info className="h-3.5 w-3.5" />, action: "info", key: "Info panel" },
+          { label: "Table of contents", icon: <List className="h-3.5 w-3.5" />, action: "toc", key: "Table of contents" },
+        ].map((item) => (
+          <button
+            key={item.label}
+            onMouseEnter={() => onHover(TEMPLATE_PREVIEWS[item.key] || "")}
+            onMouseDown={(e) => { e.preventDefault(); onInsert(item.action); }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-[#42526E] dark:text-slate-300 hover:bg-[#F4F5F7] dark:hover:bg-slate-700 transition-colors"
+          >
+            <span className="text-[#6B778C]">{item.icon}</span>
+            {item.label}
+          </button>
+        ))}
+        <button
+          onMouseDown={(e) => { e.preventDefault(); onInsert("more"); }}
+          className="flex items-center gap-1 px-3 py-1.5 rounded-md text-sm text-[#42526E] dark:text-slate-300 hover:bg-[#F4F5F7] dark:hover:bg-slate-700 transition-colors ml-auto"
+        >
+          More elements <ChevronRight className="h-3 w-3" />
+        </button>
       </div>
     </div>
   );
@@ -430,21 +428,23 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
           />
         </div>
 
+        {/* Quick-insert bar — inline card below editor, only when empty */}
+        {isEmpty && (
+          <div className="mt-10">
+            <QuickInsertBar
+              onInsert={handleQuickInsert}
+              onHover={(html) => {
+                if (editor) { editor.commands.setContent(html, false); setIsPreviewing(true); }
+              }}
+              onLeave={() => {
+                if (editor) { editor.commands.setContent(contentRef.current || "", false); setIsPreviewing(false); }
+              }}
+            />
+          </div>
+        )}
+
       </div>
     </div>
-
-    {/* Quick-insert bar — fixed at bottom of viewport when page is empty */}
-    {isEmpty && (
-      <QuickInsertBar
-        onInsert={handleQuickInsert}
-        onHover={(html) => {
-          if (editor) { editor.commands.setContent(html, false); setIsPreviewing(true); }
-        }}
-        onLeave={() => {
-          if (editor) { editor.commands.setContent(contentRef.current || "", false); setIsPreviewing(false); }
-        }}
-      />
-    )}
 
     {showShareModal && (
       <ShareModal
