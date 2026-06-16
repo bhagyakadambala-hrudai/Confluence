@@ -259,8 +259,6 @@ export default function PublishModal({ page, space, parentPage, onPublish, onClo
               <span className="shrink-0">{space?.emoji ?? "🌐"}</span>
               <span className="flex items-center gap-1 flex-1 min-w-0 text-left truncate">
                 <span className="font-medium shrink-0">{space?.name ?? "Unknown space"}</span>
-                <span className="text-[#97A0AF] shrink-0">/</span>
-                <span className="shrink-0">{space?.name ?? ""}</span>
                 {parentPage && (
                   <>
                     <span className="text-[#97A0AF] shrink-0">/</span>

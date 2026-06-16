@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -37,7 +37,10 @@ interface NavbarProps {
 
 export default function Navbar({ user }: NavbarProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const supabase = createClient();
+  // Extract spaceId from current URL (e.g. /spaces/[spaceId]/...)
+  const currentSpaceId = pathname.match(/\/spaces\/([^/]+)/)?.[1] ?? null;
   const { theme, setTheme } = useTheme();
   const [createSpaceOpen, setCreateSpaceOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -336,7 +339,7 @@ export default function Navbar({ user }: NavbarProps) {
                       <p className="text-xs text-[#6B778C]">Ready-made page layouts</p>
                     </div>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push("/pages/new")} className="flex items-center gap-3 px-3 py-2 cursor-pointer">
+                  <DropdownMenuItem onClick={() => router.push(currentSpaceId ? `/pages/new?space_id=${currentSpaceId}` : "/pages/new")} className="flex items-center gap-3 px-3 py-2 cursor-pointer">
                     <div className="h-7 w-7 rounded bg-[#DEEBFF] flex items-center justify-center shrink-0">
                       <PenLine className="h-4 w-4 text-[#0052CC]" />
                     </div>
