@@ -50,13 +50,27 @@ export default function Navbar({ user }: NavbarProps) {
   const [selected, setSelected]       = useState(0);
   const [recentPages, setRecentPages] = useState<SearchResult[]>([]);
   const [spaces, setSpaces]           = useState<{ id: string; name: string; emoji: string }[]>([]);
+  const [spacesLoaded, setSpacesLoaded] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef    = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const showDropdown = searchFocus;
 
-  // Load recently viewed pages + spaces once on focus
+  // Load spaces eagerly on mount (needed for Create button gating)
+  useEffect(() => {
+    fetch("/api/spaces").then(async (res) => {
+      if (res.ok) {
+        const data = await res.json();
+        setSpaces((Array.isArray(data) ? data : []).slice(0, 6));
+      }
+      setSpacesLoaded(true);
+    });
+  }, []);
+
+  const hasSpaces = spacesLoaded && spaces.length > 0;
+
+  // Load recently viewed pages + spaces once on search focus
   const loadRecents = useCallback(async () => {
     const [pagesRes, spacesRes] = await Promise.all([
       fetch("/api/pages?limit=10"),
@@ -291,65 +305,85 @@ export default function Navbar({ user }: NavbarProps) {
                 <span className="hidden sm:block">Create</span>
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 py-1">
-              <div className="px-3 py-1.5">
-                <p className="text-xs font-semibold text-[#6B778C] uppercase tracking-wide">Create</p>
-              </div>
-              <DropdownMenuItem onClick={() => router.push("/templates")} className="flex items-center gap-3 px-3 py-2 cursor-pointer">
-                <div className="h-7 w-7 rounded bg-[#EAE6FF] flex items-center justify-center shrink-0">
-                  <LayoutTemplate className="h-4 w-4 text-[#6554C0]" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-[#172B4D]">Start from template</p>
-                  <p className="text-xs text-[#6B778C]">Ready-made page layouts</p>
-                </div>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => router.push("/pages/new")} className="flex items-center gap-3 px-3 py-2 cursor-pointer">
-                <div className="h-7 w-7 rounded bg-[#DEEBFF] flex items-center justify-center shrink-0">
-                  <PenLine className="h-4 w-4 text-[#0052CC]" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-[#172B4D]">Page</p>
-                  <p className="text-xs text-[#6B778C]">Blank document</p>
-                </div>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 cursor-pointer">
-                <div className="h-7 w-7 rounded bg-[#E3FCEF] flex items-center justify-center shrink-0">
-                  <FileText className="h-4 w-4 text-[#00875A]" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-[#172B4D]">Live Doc</p>
-                  <p className="text-xs text-[#6B778C]">Collaborative document</p>
-                </div>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 cursor-pointer">
-                <div className="h-7 w-7 rounded bg-[#FFFAE6] flex items-center justify-center shrink-0">
-                  <Database className="h-4 w-4 text-[#FF8B00]" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-[#172B4D]">Database</p>
-                  <p className="text-xs text-[#6B778C]">Structured data table</p>
-                </div>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 cursor-pointer">
-                <div className="h-7 w-7 rounded bg-[#FFEBE6] flex items-center justify-center shrink-0">
-                  <Link2 className="h-4 w-4 text-[#DE350B]" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-[#172B4D]">Smart Link</p>
-                  <p className="text-xs text-[#6B778C]">Link with rich preview</p>
-                </div>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setCreateSpaceOpen(true)} className="flex items-center gap-3 px-3 py-2 cursor-pointer">
-                <div className="h-7 w-7 rounded bg-[#F4F5F7] flex items-center justify-center shrink-0">
-                  <Globe className="h-4 w-4 text-[#42526E]" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-[#172B4D]">Space</p>
-                  <p className="text-xs text-[#6B778C]">New team workspace</p>
-                </div>
-              </DropdownMenuItem>
+            <DropdownMenuContent align="end" className="w-48 py-1">
+              {!hasSpaces ? (
+                /* No spaces yet — show only Page (blocked) + Space */
+                <>
+                  <DropdownMenuItem
+                    onClick={() => toast.error("We're unable to create for you. Create a space first to add pages.")}
+                    className="flex items-center gap-2.5 px-3 py-2 cursor-pointer"
+                  >
+                    <FileText className="h-4 w-4 text-[#42526E]" />
+                    <span className="text-sm text-[#172B4D] dark:text-slate-200">Page</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => setCreateSpaceOpen(true)}
+                    className="flex items-center gap-2.5 px-3 py-2 cursor-pointer"
+                  >
+                    <Globe className="h-4 w-4 text-[#42526E]" />
+                    <span className="text-sm text-[#172B4D] dark:text-slate-200">Space</span>
+                  </DropdownMenuItem>
+                </>
+              ) : (
+                /* Has spaces — full create menu */
+                <>
+                  <DropdownMenuItem onClick={() => router.push("/templates")} className="flex items-center gap-3 px-3 py-2 cursor-pointer">
+                    <div className="h-7 w-7 rounded bg-[#EAE6FF] flex items-center justify-center shrink-0">
+                      <LayoutTemplate className="h-4 w-4 text-[#6554C0]" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-[#172B4D] dark:text-slate-200">Start from template</p>
+                      <p className="text-xs text-[#6B778C]">Ready-made page layouts</p>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push("/pages/new")} className="flex items-center gap-3 px-3 py-2 cursor-pointer">
+                    <div className="h-7 w-7 rounded bg-[#DEEBFF] flex items-center justify-center shrink-0">
+                      <PenLine className="h-4 w-4 text-[#0052CC]" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-[#172B4D] dark:text-slate-200">Page</p>
+                      <p className="text-xs text-[#6B778C]">Blank document</p>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 cursor-pointer">
+                    <div className="h-7 w-7 rounded bg-[#E3FCEF] flex items-center justify-center shrink-0">
+                      <FileText className="h-4 w-4 text-[#00875A]" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-[#172B4D] dark:text-slate-200">Live Doc</p>
+                      <p className="text-xs text-[#6B778C]">Collaborative document</p>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 cursor-pointer">
+                    <div className="h-7 w-7 rounded bg-[#FFFAE6] flex items-center justify-center shrink-0">
+                      <Database className="h-4 w-4 text-[#FF8B00]" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-[#172B4D] dark:text-slate-200">Database</p>
+                      <p className="text-xs text-[#6B778C]">Structured data table</p>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 cursor-pointer">
+                    <div className="h-7 w-7 rounded bg-[#FFEBE6] flex items-center justify-center shrink-0">
+                      <Link2 className="h-4 w-4 text-[#DE350B]" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-[#172B4D] dark:text-slate-200">Smart Link</p>
+                      <p className="text-xs text-[#6B778C]">Link with rich preview</p>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setCreateSpaceOpen(true)} className="flex items-center gap-3 px-3 py-2 cursor-pointer">
+                    <div className="h-7 w-7 rounded bg-[#F4F5F7] flex items-center justify-center shrink-0">
+                      <Globe className="h-4 w-4 text-[#42526E]" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-[#172B4D] dark:text-slate-200">Space</p>
+                      <p className="text-xs text-[#6B778C]">New team workspace</p>
+                    </div>
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
 
