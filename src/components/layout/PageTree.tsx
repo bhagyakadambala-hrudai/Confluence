@@ -15,6 +15,7 @@ interface Page {
   emoji: string;
   parent_id: string | null;
   position: number;
+  is_draft?: boolean;
 }
 
 interface PageTreeProps {
@@ -84,6 +85,11 @@ function TreeNode({
         >
           <span>{node.emoji || "📄"}</span>
           <span className="truncate">{node.title || "Untitled"}</span>
+          {node.is_draft && (
+            <span className="shrink-0 text-[9px] font-semibold text-[#6B778C] dark:text-slate-400 bg-[#F1F2F4] dark:bg-slate-700 px-1 py-px rounded border border-[#DFE1E6] dark:border-slate-600 leading-none">
+              DRAFT
+            </span>
+          )}
         </Link>
         {depth < 2 && (
           <button
@@ -134,7 +140,7 @@ export default function PageTree({ spaceId, userId, onNavigate }: PageTreeProps)
   async function fetchPages() {
     const { data } = await supabase
       .from("pages")
-      .select("id, title, emoji, parent_id, position")
+      .select("id, title, emoji, parent_id, position, is_draft")
       .eq("space_id", spaceId)
       .order("position", { ascending: true });
     setPages(data || []);
