@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { X, Link2, Lock, Users, Trash2, ChevronDown, MoreHorizontal, Info, FileEdit } from "lucide-react";
+import { X, Link2, Lock, Users, Trash2, ChevronDown, MoreHorizontal, Info, FileEdit, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { getInitials } from "@/lib/utils";
 
@@ -29,7 +29,8 @@ export default function ShareModal({ pageId, spaceId, pageTitle, onClose }: Shar
   const [spaceMemberCount, setSpaceMemberCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<{ type: "user" | "team"; id: string; label: string; sublabel: string; avatar?: string }[]>([]);
+  const [searchResults, setSearchResults] = useState<{ type: "user" | "team" | "invite"; id: string; label: string; sublabel: string; avatar?: string }[]>([]);
+  const [inviting, setInviting] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [showAccessMenu, setShowAccessMenu] = useState(false);
   const [spaceMembers, setSpaceMembers] = useState<{ id: string; full_name: string; email: string; avatar_url: string }[]>([]);
@@ -99,8 +100,35 @@ export default function ShareModal({ pageId, spaceId, pageTitle, onClose }: Shar
     const teamResults = teams
       .filter(t => !existingTeamIds.has(t.id) && t.name.toLowerCase().includes(lower))
       .map(t => ({ type: "team" as const, id: t.id, label: t.name, sublabel: `${t.member_count} members` }));
-    setSearchResults([...userResults, ...teamResults]);
+
+    // If query looks like an email and no exact match found, offer to invite by email
+    const isEmail = /\S+@\S+\.\S+/.test(q);
+    const exactEmailMatch = spaceMembers.some(m => m.email?.toLowerCase() === lower);
+    const inviteResult = isEmail && !exactEmailMatch
+      ? [{ type: "invite" as const, id: q, label: q, sublabel: "Send email invitation" }]
+      : [];
+
+    setSearchResults([...userResults, ...teamResults, ...inviteResult]);
     setShowDropdown(true);
+  }
+
+  async function handleInviteByEmail(email: string) {
+    setInviting(true);
+    const resp = await fetch(`/api/pages/${pageId}/invite`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, spaceId, can_view: true, can_edit: false }),
+    });
+    setInviting(false);
+    if (resp.ok) {
+      const data = await resp.json();
+      toast.success(data.message || `Invitation sent to ${email}`);
+      setSearchQuery(""); setShowDropdown(false);
+      loadPermissions();
+    } else {
+      const err = await resp.json();
+      toast.error(err.error || "Failed to send invitation");
+    }
   }
 
   async function handleAddPermission(subject: { type: "user" | "team"; id: string }) {
@@ -182,22 +210,29 @@ export default function ShareModal({ pageId, spaceId, pageTitle, onClose }: Shar
                 {searchResults.map((r) => (
                   <button
                     key={r.id}
-                    onClick={() => handleAddPermission({ type: r.type, id: r.id })}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[#F4F5F7] dark:hover:bg-[#21262d] text-left transition-colors"
+                    onClick={() => r.type === "invite" ? handleInviteByEmail(r.id) : handleAddPermission({ type: r.type as "user" | "team", id: r.id })}
+                    disabled={inviting && r.type === "invite"}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[#F4F5F7] dark:hover:bg-[#21262d] text-left transition-colors disabled:opacity-60"
                   >
                     {r.type === "user" ? (
                       <Avatar className="h-7 w-7 shrink-0">
                         <AvatarImage src={r.avatar} />
                         <AvatarFallback className="text-[9px] bg-[#0052CC] text-white">{getInitials(r.label)}</AvatarFallback>
                       </Avatar>
-                    ) : (
+                    ) : r.type === "team" ? (
                       <div className="h-7 w-7 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center shrink-0">
                         <Users className="h-3.5 w-3.5 text-purple-600" />
+                      </div>
+                    ) : (
+                      <div className="h-7 w-7 rounded-full bg-[#E3FCEF] dark:bg-green-900/30 flex items-center justify-center shrink-0">
+                        <Mail className="h-3.5 w-3.5 text-[#00875A]" />
                       </div>
                     )}
                     <div>
                       <div className="text-sm font-medium text-[#172B4D] dark:text-slate-200">{r.label}</div>
-                      <div className="text-xs text-[#6B778C] dark:text-slate-400">{r.sublabel}</div>
+                      <div className="text-xs text-[#6B778C] dark:text-slate-400">
+                        {r.type === "invite" && inviting ? "Sending invitation…" : r.sublabel}
+                      </div>
                     </div>
                   </button>
                 ))}

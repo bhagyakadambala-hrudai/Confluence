@@ -42,7 +42,8 @@ export default function InviteMemberModal({ spaceId, open, onClose }: InviteMemb
     });
     setLoading(false);
     if (resp.ok) {
-      toast.success(`Invited ${email}`);
+      const data = await resp.json();
+      toast.success(data.message || `Invited ${email}`);
       setEmail("");
       onClose();
     } else {

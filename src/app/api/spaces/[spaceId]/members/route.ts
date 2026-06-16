@@ -50,10 +50,15 @@ export async function POST(
 
   const found = await lookupUserByEmail(admin, email);
   if (!found) {
-    return NextResponse.json(
-      { error: "No account found with that email. The person must sign up first." },
-      { status: 404 }
-    );
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || new URL(request.url).origin;
+    const { error: inviteError } = await admin.auth.admin.inviteUserByEmail(email, {
+      redirectTo: `${appUrl}/auth/callback`,
+    });
+    if (inviteError) {
+      return NextResponse.json({ error: "Failed to send invitation: " + inviteError.message }, { status: 500 });
+    }
+    await admin.from("pending_invites").insert({ email, space_id: spaceId, role, invited_by: user.id });
+    return NextResponse.json({ invited: true, message: `Invitation sent to ${email}` }, { status: 200 });
   }
 
   // Check for duplicate membership
