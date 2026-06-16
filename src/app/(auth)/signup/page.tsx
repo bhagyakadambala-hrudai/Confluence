@@ -95,14 +95,21 @@ function SignupContent() {
     ev.preventDefault();
     if (!validate()) return;
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
+    const { data: signupData, error } = await supabase.auth.signUp({
       email,
       password,
       options: { data: { full_name: fullName } },
     });
     setLoading(false);
-    if (error) toast.error(error.message);
-    else { toast.success("Account created! Check your email to confirm."); router.push("/login"); }
+    if (error) { toast.error(error.message); return; }
+    // If auto-confirm is enabled, a session is returned immediately — apply pending invites now
+    if (signupData.session) {
+      await fetch("/api/auth/apply-pending-invites", { method: "POST" });
+      router.push("/home"); router.refresh();
+    } else {
+      toast.success("Account created! Check your email to confirm.");
+      router.push("/login");
+    }
   }
 
   async function handleGoogle() {

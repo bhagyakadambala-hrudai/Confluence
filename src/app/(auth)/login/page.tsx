@@ -100,8 +100,10 @@ function LoginContent() {
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
-    if (error) toast.error(error.message);
-    else { router.push("/home"); router.refresh(); }
+    if (error) { toast.error(error.message); return; }
+    // Apply any pending invites (e.g. user was invited before signing up)
+    await fetch("/api/auth/apply-pending-invites", { method: "POST" });
+    router.push("/home"); router.refresh();
   }
 
   async function handleGoogle() {
