@@ -57,9 +57,22 @@ export async function POST(
 
   const found = await lookupUserByEmail(admin, email);
   if (!found) {
+    // Send an invite email via Supabase auth so the person can sign up
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || new URL(request.url).origin;
+    const { error: inviteError } = await admin.auth.admin.inviteUserByEmail(email, {
+      redirectTo: `${appUrl}/auth/callback`,
+    });
+    if (inviteError) {
+      return NextResponse.json(
+        { error: "Failed to send invitation: " + inviteError.message },
+        { status: 500 }
+      );
+    }
+    // Store a pending invite as a marker (no team_id column, so just record email+invited_by)
+    await admin.from("pending_invites").insert({ email, invited_by: user.id });
     return NextResponse.json(
-      { error: "No account found with that email. The person must sign up first." },
-      { status: 404 }
+      { invited: true, message: `Invitation sent to ${email}` },
+      { status: 200 }
     );
   }
 
