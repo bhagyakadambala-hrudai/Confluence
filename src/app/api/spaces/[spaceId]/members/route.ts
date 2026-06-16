@@ -33,8 +33,10 @@ export async function POST(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { email, role = "editor" } = await request.json();
-  if (!email) return NextResponse.json({ error: "Email is required" }, { status: 400 });
+  const body = await request.json();
+  const { email, team_id, role = "editor" } = body;
+
+  if (!email && !team_id) return NextResponse.json({ error: "Email or team_id is required" }, { status: 400 });
   if (!VALID_ROLES.includes(role)) {
     return NextResponse.json({ error: "Invalid role" }, { status: 400 });
   }
@@ -46,6 +48,48 @@ export async function POST(
     .from("space_members").select("role").eq("space_id", spaceId).eq("user_id", user.id).single();
   if (!myMembership || !["owner", "admin"].includes(myMembership.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  // Handle team_id: add all team members to the space
+  if (team_id) {
+    const { data: teamRow } = await admin
+      .from("teams")
+      .select("owner_id")
+      .eq("id", team_id)
+      .single();
+
+    const { data: teamMembers } = await admin
+      .from("team_members")
+      .select("user_id")
+      .eq("team_id", team_id);
+
+    const memberIds: string[] = (teamMembers || []).map((m: { user_id: string }) => m.user_id);
+    if (teamRow?.owner_id && !memberIds.includes(teamRow.owner_id)) {
+      memberIds.push(teamRow.owner_id);
+    }
+
+    if (memberIds.length === 0) {
+      return NextResponse.json({ added: 0, message: "Team has no members" }, { status: 200 });
+    }
+
+    let addedCount = 0;
+    for (const uid of memberIds) {
+      // Skip if already a member
+      const { data: existing } = await admin
+        .from("space_members")
+        .select("id")
+        .eq("space_id", spaceId)
+        .eq("user_id", uid)
+        .single();
+      if (existing) continue;
+
+      const { error: insertError } = await admin
+        .from("space_members")
+        .insert({ space_id: spaceId, user_id: uid, role });
+      if (!insertError) addedCount++;
+    }
+
+    return NextResponse.json({ added: addedCount, message: `Added ${addedCount} team member${addedCount !== 1 ? "s" : ""} to the space` }, { status: 200 });
   }
 
   const found = await lookupUserByEmail(admin, email);
