@@ -134,11 +134,15 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSaved = useRef({ title: page.title, content: page.content || "" });
 
-  const [previewContent, setPreviewContent] = useState<string | null>(null);
+  const [isPreviewing, setIsPreviewing] = useState(false);
+  const contentRef = useRef(page.content || "");
 
   const authorName = page.profiles?.full_name || "Unknown";
   const authorAvatar = page.profiles?.avatar_url;
   const isEmpty = !content || content === "<p></p>" || content.replace(/<[^>]*>/g, "").trim() === "";
+
+  // Keep contentRef in sync so hover-leave can restore without stale closure
+  useEffect(() => { contentRef.current = content; }, [content]);
 
   const save = useCallback(async (t: string, c: string) => {
     setSaveStatus("saving");
@@ -218,7 +222,7 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
   }
 
   function handleQuickInsert(type: string) {
-    setPreviewContent(null);
+    setIsPreviewing(false);
     if (!editor) return;
     if (type === "table") {
       editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
@@ -409,8 +413,8 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
           )}
         </div>
 
-        {/* Editor placeholder hint (shown when empty) */}
-        {isEmpty && (
+        {/* Editor placeholder hint (shown when empty and not previewing a template) */}
+        {isEmpty && !isPreviewing && (
           <p className="text-[#97A0AF] dark:text-slate-500 text-sm mb-2 pointer-events-none select-none">
             Press{" "}
             <kbd className="px-1.5 py-0.5 bg-[#F4F5F7] dark:bg-slate-700 border border-[#DFE1E6] dark:border-slate-600 rounded text-xs font-mono text-[#42526E] dark:text-slate-300">space</kbd>
@@ -423,8 +427,8 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
         {/* Editor (toolbar managed externally) */}
         <div className="min-h-[200px]">
           <Editor
-            content={previewContent !== null ? previewContent : content}
-            onChange={previewContent !== null ? () => {} : setContent}
+            content={content}
+            onChange={setContent}
             showToolbar={false}
             placeholder=""
             onEditorReady={setEditor}
@@ -442,8 +446,12 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
     {isEmpty && (
       <QuickInsertBar
         onInsert={handleQuickInsert}
-        onHover={(html) => setPreviewContent(html)}
-        onLeave={() => setPreviewContent(null)}
+        onHover={(html) => {
+          if (editor) { editor.commands.setContent(html, false); setIsPreviewing(true); }
+        }}
+        onLeave={() => {
+          if (editor) { editor.commands.setContent(contentRef.current || "", false); setIsPreviewing(false); }
+        }}
       />
     )}
 
