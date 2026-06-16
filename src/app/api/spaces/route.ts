@@ -12,16 +12,19 @@ export async function GET(request: Request) {
 
   const admin = createAdminClient();
 
-  // Step 1: get all space IDs the user belongs to via space_members
+  // Use inner join so stale space_members rows pointing to deleted spaces are excluded
   const { data: memberRows } = await admin
     .from("space_members")
-    .select("space_id")
+    .select("space_id, spaces!inner(id)")
     .eq("user_id", user.id);
 
-  const spaceIds = (memberRows || []).map((r: { space_id: string }) => r.space_id);
+  const spaceIds = (memberRows || [])
+    .filter((r: { spaces: unknown }) => r.spaces)
+    .map((r: { space_id: string }) => r.space_id);
+
   if (spaceIds.length === 0) return NextResponse.json([]);
 
-  // Step 2: query spaces by those IDs with optional status filter
+  // Query spaces by those IDs with optional status filter
   let query = admin
     .from("spaces")
     .select("*")

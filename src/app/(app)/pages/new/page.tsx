@@ -27,24 +27,25 @@ export default async function NewPagePage({
     if (membership) spaceId = requestedSpaceId;
   }
 
-  // Fallback: first space the user is a member of
+  // Fallback: most recent space the user is a member of (inner join ensures space still exists)
   if (!spaceId) {
     const { data: memberships } = await admin
       .from("space_members")
-      .select("space_id")
+      .select("space_id, spaces!inner(id, created_at)")
       .eq("user_id", user.id)
-      .order("created_at")
-      .limit(1);
-    spaceId = memberships?.[0]?.space_id ?? null;
+      .order("created_at", { ascending: false })
+      .limit(10);
+    // Pick the most recently joined space where the space actually exists
+    spaceId = memberships?.find(m => m.spaces)?.space_id ?? null;
   }
 
-  // Fallback: spaces owned by user
+  // Fallback: spaces owned by user that still exist
   if (!spaceId) {
     const { data: owned } = await admin
       .from("spaces")
       .select("id")
       .eq("owner_id", user.id)
-      .order("created_at")
+      .order("created_at", { ascending: false })
       .limit(1);
     spaceId = owned?.[0]?.id ?? null;
   }
