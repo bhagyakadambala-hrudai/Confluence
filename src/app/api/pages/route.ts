@@ -12,13 +12,16 @@ export async function GET(request: Request) {
 
   const admin = createAdminClient();
 
+  const limit = searchParams.get("limit") ? parseInt(searchParams.get("limit")!) : null;
+
   // Try to include is_draft; fall back if column doesn't exist yet (migration not run)
   for (const cols of [
-    "id, title, emoji, parent_id, space_id, position, is_draft, created_at, updated_at",
-    "id, title, emoji, parent_id, space_id, position, created_at, updated_at",
+    "id, title, emoji, parent_id, space_id, position, is_draft, created_at, updated_at, spaces!inner(name, emoji)",
+    "id, title, emoji, parent_id, space_id, position, created_at, updated_at, spaces!inner(name, emoji)",
   ]) {
-    let query = admin.from("pages").select(cols).order("position", { ascending: true });
+    let query = admin.from("pages").select(cols).order("updated_at", { ascending: false });
     if (spaceId) query = query.eq("space_id", spaceId);
+    if (limit) query = query.limit(limit);
     const { data, error } = await query;
     if (!error) return NextResponse.json(data);
     if (!error.message.includes("is_draft")) {

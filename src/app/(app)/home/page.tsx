@@ -7,7 +7,7 @@ export default async function HomePage() {
 
   const { data: recentPages } = await supabase
     .from("pages")
-    .select("id, title, emoji, space_id, updated_at, spaces(name, emoji)")
+    .select("id, title, emoji, space_id, updated_at, spaces!inner(name, emoji)")
     .order("updated_at", { ascending: false })
     .limit(10);
 
