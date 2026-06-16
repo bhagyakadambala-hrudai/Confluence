@@ -21,7 +21,7 @@ import {
   FileText, ExternalLink, X, Filter, Lock,
   Settings, Trash2, Archive, Link2, Copy, Move, Pencil,
   Eye, UserCog, Folder,
-  PenLine, Database, Video,
+  PenLine, Video,
 } from "lucide-react";
 import { cn, getInitials, formatRelativeTime } from "@/lib/utils";
 import { toast } from "sonner";
@@ -433,21 +433,6 @@ export default function Sidebar({ open, onToggle, user, width = 280 }: SidebarPr
                       icon={<FileText className="h-4 w-4 text-[#0052CC]" />}
                       label="Page"
                       onClick={() => { setShowCreatePopup(false); createPage(); }}
-                    />
-                    <SimpleCreateItem
-                      icon={<PenLine className="h-4 w-4 text-[#6554C0]" />}
-                      label="Whiteboard"
-                      onClick={() => { setShowCreatePopup(false); toast("Whiteboard coming soon"); }}
-                    />
-                    <SimpleCreateItem
-                      icon={<Database className="h-4 w-4 text-[#36B37E]" />}
-                      label="Database"
-                      onClick={() => { setShowCreatePopup(false); toast("Database coming soon"); }}
-                    />
-                    <SimpleCreateItem
-                      icon={<Link2 className="h-4 w-4 text-[#00B8D9]" />}
-                      label="Smart Link"
-                      onClick={() => { setShowCreatePopup(false); toast("Smart Link coming soon"); }}
                     />
                     <SimpleCreateItem
                       icon={<Folder className="h-4 w-4 text-amber-500" />}
@@ -892,10 +877,6 @@ function PageItem({ page, allPages, spaceId, activePageId, depth, onRefresh, onC
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 {[
-                  { label: "Live Doc", icon: <PenLine className="h-4 w-4 text-[#97A0AF]" /> },
-                  { label: "Whiteboard", icon: <Eye className="h-4 w-4 text-[#97A0AF]" /> },
-                  { label: "Database", icon: <Database className="h-4 w-4 text-[#97A0AF]" /> },
-                  { label: "Smart Link", icon: <Link2 className="h-4 w-4 text-[#97A0AF]" /> },
                   { label: "Folder", icon: <Folder className="h-4 w-4 text-[#97A0AF]" /> },
                   { label: "Loom video", icon: <Video className="h-4 w-4 text-[#97A0AF]" /> },
                 ].map(({ label, icon }) => (

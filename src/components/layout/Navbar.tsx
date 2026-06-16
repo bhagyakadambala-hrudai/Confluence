@@ -15,8 +15,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import CreateSpaceModal from "@/components/spaces/CreateSpaceModal";
 import {
   Moon, Sun, Search, LogOut, Settings, User as UserIcon,
-  Plus, FileText, Globe, PenLine, LayoutTemplate,
-  Database, Link2, Users, Loader2,
+  Plus, FileText, Globe, PenLine,
+  Link2, Users, Loader2,
 } from "lucide-react";
 import NotificationDropdown from "@/components/layout/NotificationDropdown";
 import { useTheme } from "next-themes";
@@ -339,24 +339,8 @@ export default function Navbar({ user }: NavbarProps) {
                 /* Has spaces (or still loading — default to full to prevent glitch) */
                 <>
                   <DropdownMenuItem onClick={handleCreatePage} className="flex items-center gap-2.5 px-3 py-2 cursor-pointer">
-                    <FileText className="h-4 w-4 text-[#42526E] dark:text-slate-400 shrink-0" />
-                    <span className="text-sm text-[#172B4D] dark:text-slate-200">Live Doc</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleCreatePage} className="flex items-center gap-2.5 px-3 py-2 cursor-pointer">
                     <PenLine className="h-4 w-4 text-[#42526E] dark:text-slate-400 shrink-0" />
                     <span className="text-sm text-[#172B4D] dark:text-slate-200">Page</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="flex items-center gap-2.5 px-3 py-2 cursor-pointer">
-                    <LayoutTemplate className="h-4 w-4 text-[#42526E] dark:text-slate-400 shrink-0" />
-                    <span className="text-sm text-[#172B4D] dark:text-slate-200">Whiteboard</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="flex items-center gap-2.5 px-3 py-2 cursor-pointer">
-                    <Database className="h-4 w-4 text-[#42526E] dark:text-slate-400 shrink-0" />
-                    <span className="text-sm text-[#172B4D] dark:text-slate-200">Database</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="flex items-center gap-2.5 px-3 py-2 cursor-pointer">
-                    <Link2 className="h-4 w-4 text-[#42526E] dark:text-slate-400 shrink-0" />
-                    <span className="text-sm text-[#172B4D] dark:text-slate-200">Smart Link</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setCreateSpaceOpen(true)} className="flex items-center gap-2.5 px-3 py-2 cursor-pointer">
                     <Globe className="h-4 w-4 text-[#42526E] dark:text-slate-400 shrink-0" />
