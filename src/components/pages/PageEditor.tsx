@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import type { Editor as EditorType } from "@tiptap/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import CommentSection from "@/components/comments/CommentSection";
 import LabelPicker from "./LabelPicker";
 import Toolbar from "@/components/editor/Toolbar";
 import { toast } from "sonner";
@@ -169,15 +168,22 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
     return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
   }, [title, content, save]);
 
-  async function handlePublish() {
-    let effectiveTitle = title.trim();
-    if (!effectiveTitle) {
-      const now = new Date();
-      const pad = (n: number) => String(n).padStart(2, "0");
-      effectiveTitle = `Page ${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
-      setTitle(effectiveTitle);
+  function generateTitle() {
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `Page ${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  }
+
+  function handleOpenPublishModal() {
+    if (!title.trim()) {
+      const generated = generateTitle();
+      setTitle(generated);
     }
-    await save(effectiveTitle, content);
+    setShowPublishModal(true);
+  }
+
+  async function handlePublish() {
+    await save(title, content);
     // Mark page as published (not a draft)
     await fetch(`/api/pages/${page.id}`, {
       method: "PATCH",
@@ -187,7 +193,7 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
     const resp = await fetch(`/api/pages/${page.id}/versions`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: effectiveTitle, content }),
+      body: JSON.stringify({ title, content }),
     });
     if (resp.ok) toast.success("Page published!");
     else toast.error("Failed to publish");
@@ -298,7 +304,7 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
             {/* Publish — split button */}
             <div className="flex items-center">
               <button
-                onClick={() => setShowPublishModal(true)}
+                onClick={handleOpenPublishModal}
                 className="flex items-center gap-1 px-3 h-8 bg-[#0052CC] hover:bg-[#0065FF] text-white text-sm font-semibold rounded-l transition-colors"
               >
                 Publish…
@@ -413,17 +419,6 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
           )}
         </div>
 
-        {/* Editor placeholder hint (shown when empty and not previewing a template) */}
-        {isEmpty && !isPreviewing && (
-          <p className="text-[#97A0AF] dark:text-slate-500 text-sm mb-2 pointer-events-none select-none">
-            Press{" "}
-            <kbd className="px-1.5 py-0.5 bg-[#F4F5F7] dark:bg-slate-700 border border-[#DFE1E6] dark:border-slate-600 rounded text-xs font-mono text-[#42526E] dark:text-slate-300">space</kbd>
-            {" "}to Ask Rovo or{" "}
-            <kbd className="px-1.5 py-0.5 bg-[#F4F5F7] dark:bg-slate-700 border border-[#DFE1E6] dark:border-slate-600 rounded text-xs font-mono text-[#42526E] dark:text-slate-300">/</kbd>
-            {" "}to insert elements
-          </p>
-        )}
-
         {/* Editor (toolbar managed externally) */}
         <div className="min-h-[200px]">
           <Editor
@@ -435,10 +430,6 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
           />
         </div>
 
-        {/* Comments */}
-        <div className={`border-t border-[#F4F5F7] dark:border-slate-700 pt-8 ${isEmpty ? "mt-4 mb-28" : "mt-16"}`}>
-          <CommentSection pageId={page.id} currentUserId={currentUserId} />
-        </div>
       </div>
     </div>
 
