@@ -71,6 +71,40 @@ export async function POST(
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // If sharing with a team, also grant access to each individual team member
+  if (team_id) {
+    // Fetch team owner
+    const { data: teamRow } = await admin
+      .from("teams")
+      .select("owner_id")
+      .eq("id", team_id)
+      .single();
+
+    // Fetch all team members
+    const { data: teamMembers } = await admin
+      .from("team_members")
+      .select("user_id")
+      .eq("team_id", team_id);
+
+    const memberIds: string[] = (teamMembers || []).map((m: { user_id: string }) => m.user_id);
+    if (teamRow?.owner_id && !memberIds.includes(teamRow.owner_id)) {
+      memberIds.push(teamRow.owner_id);
+    }
+
+    if (memberIds.length > 0) {
+      const memberPermissions = memberIds.map((uid) => ({
+        page_id: pageId,
+        user_id: uid,
+        can_view,
+        can_edit,
+      }));
+      await admin
+        .from("page_permissions")
+        .upsert(memberPermissions, { onConflict: "page_id,user_id", ignoreDuplicates: false });
+    }
+  }
+
   return NextResponse.json(data, { status: 201 });
 }
 

@@ -250,6 +250,22 @@ function TeamCard({ team, onOpen, onDelete }: { team: Team; onOpen: () => void; 
   );
 }
 
+// Solid picker colors mapping to each TEAM_GRADIENTS entry
+const GRADIENT_PICKER_COLORS = [
+  "#3B82F6", // blue-500
+  "#A855F7", // purple-500
+  "#22C55E", // green-500
+  "#F97316", // orange-500
+  "#06B6D4", // cyan-500
+  "#D946EF", // fuchsia-500
+];
+
+function getGradientIndexFromName(name: string) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return Math.abs(hash) % TEAM_GRADIENTS.length;
+}
+
 /* ── Create Team Modal ── */
 function CreateTeamModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const [name, setName] = useState("");
@@ -257,6 +273,10 @@ function CreateTeamModal({ onClose, onCreated }: { onClose: () => void; onCreate
   const [emailInput, setEmailInput] = useState("");
   const [emails, setEmails] = useState<string[]>([]);
   const [creating, setCreating] = useState(false);
+  const [selectedGradientIndex, setSelectedGradientIndex] = useState<number | null>(null);
+
+  const gradientIndex = selectedGradientIndex !== null ? selectedGradientIndex : getGradientIndexFromName(name || "T");
+  const gradient = TEAM_GRADIENTS[gradientIndex];
 
   function addEmail() {
     const val = emailInput.trim().toLowerCase();
@@ -322,17 +342,39 @@ function CreateTeamModal({ onClose, onCreated }: { onClose: () => void; onCreate
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="bg-white dark:bg-[#1B2A3B] rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#DFE1E6] dark:border-slate-700">
-          <h2 className="text-base font-semibold text-[#172B4D] dark:text-white">Create a team</h2>
+          <h2 className="text-base font-semibold text-[#172B4D] dark:text-white">Create a new team</h2>
           <button onClick={onClose} className="h-8 w-8 flex items-center justify-center text-[#6B778C] hover:text-[#172B4D] dark:hover:text-white hover:bg-[#F4F5F7] dark:hover:bg-slate-700 rounded-lg transition-colors">
             <X className="h-4 w-4" />
           </button>
         </div>
 
         <div className="px-6 py-5 space-y-4">
+          {/* Color picker row */}
+          <div>
+            <label className="block text-xs font-semibold text-[#172B4D] dark:text-slate-200 mb-2">Color</label>
+            <div className="flex items-center gap-2.5">
+              {GRADIENT_PICKER_COLORS.map((color, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setSelectedGradientIndex(idx)}
+                  className="relative h-7 w-7 rounded-full transition-transform hover:scale-110 focus:outline-none"
+                  style={{ backgroundColor: color }}
+                  title={`Color ${idx + 1}`}
+                >
+                  {gradientIndex === idx && (
+                    <span className="absolute inset-0 flex items-center justify-center">
+                      <span className="h-2.5 w-2.5 rounded-full bg-white/90 ring-2 ring-white/60" />
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Preview avatar */}
-          <div className="flex justify-center">
-            <div className={`h-16 w-16 rounded-2xl bg-gradient-to-br ${getGradient(name || "T")} flex items-center justify-center shadow-lg`}>
-              <span className="text-white font-bold text-xl">{(name || "T").slice(0, 2).toUpperCase()}</span>
+          <div className="flex justify-center py-2">
+            <div className={`h-20 w-20 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-lg`}>
+              <span className="text-white font-bold text-2xl">{(name || "T").slice(0, 2).toUpperCase()}</span>
             </div>
           </div>
 
@@ -351,7 +393,7 @@ function CreateTeamModal({ onClose, onCreated }: { onClose: () => void; onCreate
 
           {/* Description */}
           <div>
-            <label className="block text-xs font-semibold text-[#172B4D] dark:text-slate-200 mb-1.5">Description</label>
+            <label className="block text-xs font-semibold text-[#172B4D] dark:text-slate-200 mb-1.5">Description <span className="font-normal text-[#97A0AF]">(optional)</span></label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -361,9 +403,9 @@ function CreateTeamModal({ onClose, onCreated }: { onClose: () => void; onCreate
             />
           </div>
 
-          {/* Add people */}
+          {/* Invite members */}
           <div>
-            <label className="block text-xs font-semibold text-[#172B4D] dark:text-slate-200 mb-1.5">Add people</label>
+            <label className="block text-xs font-semibold text-[#172B4D] dark:text-slate-200 mb-1.5">Invite members <span className="font-normal text-[#97A0AF]">(optional)</span></label>
             <div className="flex gap-2">
               <div className="flex-1 flex items-center gap-2 px-3 h-9 rounded-lg border border-[#DFE1E6] dark:border-slate-600 bg-white dark:bg-slate-800 focus-within:ring-2 focus-within:ring-[#0052CC] focus-within:border-transparent transition-all">
                 <Mail className="h-3.5 w-3.5 text-[#6B778C] shrink-0" />
@@ -536,36 +578,39 @@ function TeamDetailModal({ team, onClose }: { team: TeamDetail; onClose: () => v
             <div className="px-6 py-4">
               {/* Add member (owner only) */}
               {team.my_role === "owner" && (
-                <div className="flex gap-2 mb-4">
-                  <div className="flex items-center gap-2 flex-1 px-3 h-9 rounded-lg border border-[#DFE1E6] dark:border-slate-600 bg-white dark:bg-slate-800 focus-within:border-[#0052CC] focus-within:ring-1 focus-within:ring-[#0052CC] transition-colors">
-                    <Mail className="h-3.5 w-3.5 text-[#6B778C] shrink-0" />
-                    <input
-                      value={addEmail}
-                      onChange={(e) => setAddEmail(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleAddMember()}
-                      placeholder="Invite by email address"
-                      className="bg-transparent outline-none text-sm text-[#172B4D] dark:text-slate-200 placeholder-[#97A0AF] w-full"
-                    />
-                  </div>
-                  <div className="relative">
-                    <select
-                      value={addRole}
-                      onChange={(e) => setAddRole(e.target.value)}
-                      className="h-9 px-3 text-sm border border-[#DFE1E6] dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-[#172B4D] dark:text-slate-200 focus:outline-none appearance-none pr-7 cursor-pointer"
+                <div className="mb-4">
+                  <p className="text-xs font-semibold text-[#172B4D] dark:text-slate-200 mb-2">+ Add member</p>
+                  <div className="flex gap-2">
+                    <div className="flex items-center gap-2 flex-1 px-3 h-9 rounded-lg border border-[#DFE1E6] dark:border-slate-600 bg-white dark:bg-slate-800 focus-within:border-[#0052CC] focus-within:ring-1 focus-within:ring-[#0052CC] transition-colors">
+                      <Mail className="h-3.5 w-3.5 text-[#6B778C] shrink-0" />
+                      <input
+                        value={addEmail}
+                        onChange={(e) => setAddEmail(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleAddMember()}
+                        placeholder="Invite by email address"
+                        className="bg-transparent outline-none text-sm text-[#172B4D] dark:text-slate-200 placeholder-[#97A0AF] w-full"
+                      />
+                    </div>
+                    <div className="relative">
+                      <select
+                        value={addRole}
+                        onChange={(e) => setAddRole(e.target.value)}
+                        className="h-9 px-3 text-sm border border-[#DFE1E6] dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-[#172B4D] dark:text-slate-200 focus:outline-none appearance-none pr-7 cursor-pointer"
+                      >
+                        <option value="admin">Admin</option>
+                        <option value="member">Member</option>
+                      </select>
+                      <ChevronDown className="h-3.5 w-3.5 absolute right-2 top-1/2 -translate-y-1/2 text-[#6B778C] pointer-events-none" />
+                    </div>
+                    <button
+                      onClick={handleAddMember}
+                      disabled={adding || !addEmail.trim()}
+                      className="flex items-center gap-1.5 px-3 h-9 text-sm font-semibold text-white bg-[#0052CC] hover:bg-[#0065FF] rounded-lg transition-colors disabled:opacity-50 shrink-0"
                     >
-                      <option value="admin">Admin</option>
-                      <option value="member">Member</option>
-                    </select>
-                    <ChevronDown className="h-3.5 w-3.5 absolute right-2 top-1/2 -translate-y-1/2 text-[#6B778C] pointer-events-none" />
+                      <UserPlus className="h-3.5 w-3.5" />
+                      Invite
+                    </button>
                   </div>
-                  <button
-                    onClick={handleAddMember}
-                    disabled={adding || !addEmail.trim()}
-                    className="flex items-center gap-1.5 px-3 h-9 text-sm font-semibold text-white bg-[#0052CC] hover:bg-[#0065FF] rounded-lg transition-colors disabled:opacity-50 shrink-0"
-                  >
-                    <UserPlus className="h-3.5 w-3.5" />
-                    Invite
-                  </button>
                 </div>
               )}
 
@@ -665,9 +710,9 @@ function MemberRow({
       {canRemove && onRemove && (
         <button
           onClick={onRemove}
-          className="h-7 w-7 flex items-center justify-center text-[#97A0AF] hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+          className="h-6 w-6 flex items-center justify-center text-[#97A0AF] hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors opacity-100"
         >
-          <Trash2 className="h-3.5 w-3.5" />
+          <Trash2 className="h-3 w-3" />
         </button>
       )}
     </div>
