@@ -81,7 +81,7 @@ export default function MovePageModal({ pageId, currentSpaceId, onClose }: MoveP
     if (resp.ok) {
       const page = await resp.json() as Page;
       toast.success("Page moved successfully");
-      router.push(`/spaces/${page.space_id}/pages/${page.id}`);
+      router.push(`/spaces/${page.space_id}/pages/${page.id}/edit`);
       onClose();
     } else {
       toast.error("Failed to move page");

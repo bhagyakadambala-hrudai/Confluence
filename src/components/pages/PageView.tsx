@@ -148,7 +148,7 @@ export default function PageView({
           {parentPage && (
             <>
               <Link
-                href={`/spaces/${page.space_id}/pages/${parentPage.id}`}
+                href={`/spaces/${page.space_id}/pages/${parentPage.id}/edit`}
                 className="flex items-center gap-1 hover:text-[#0052CC] dark:hover:text-blue-400 transition-colors shrink-0"
               >
                 <span>{parentPage.emoji}</span>

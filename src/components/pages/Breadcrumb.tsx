@@ -30,7 +30,7 @@ export default function Breadcrumb({ space, parentPage, currentPage, spaceId }: 
         <>
           <ChevronRight className="h-3.5 w-3.5 shrink-0" />
           <Link
-            href={`/spaces/${spaceId}/pages/${parentPage.id}`}
+            href={`/spaces/${spaceId}/pages/${parentPage.id}/edit`}
             className="hover:text-foreground flex items-center gap-1 shrink-0"
           >
             <span>{parentPage.emoji}</span>

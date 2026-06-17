@@ -7,6 +7,7 @@ import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import CreateSpaceModal from "@/components/spaces/CreateSpaceModal";
+import MovePageModal from "@/components/pages/MovePageModal";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -183,7 +184,7 @@ export default function Sidebar({ open, onToggle, user, width = 280 }: SidebarPr
     const resp = await fetch("/api/pages", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ space_id: activeSpaceId, parent_id: parentId || null, title: "Untitled", content: "", emoji: "📄" }),
+      body: JSON.stringify({ space_id: activeSpaceId, parent_id: parentId || null, title: "", content: "", emoji: "📄" }),
     });
     if (resp.ok) {
       const page = await resp.json();
@@ -781,6 +782,7 @@ function PageItem({ page, allPages, spaceId, activePageId, depth, onRefresh, onC
   const isActive = activePageId === page.id;
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(page.title || "Untitled");
+  const [showMoveModal, setShowMoveModal] = useState(false);
 
   async function handleRename() {
     if (!renameValue.trim() || renameValue === page.title) { setRenaming(false); return; }
@@ -905,10 +907,10 @@ function PageItem({ page, allPages, spaceId, activePageId, depth, onRefresh, onC
                 <DropdownMenuItem onClick={handleCopyLink} className="flex items-center gap-2 cursor-pointer">
                   <Link2 className="h-4 w-4" /> Copy link
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push(`/spaces/${spaceId}/pages/${page.id}`)} className="flex items-center gap-2 cursor-pointer text-[#97A0AF]">
+                <DropdownMenuItem onClick={() => toast("Make a copy — coming soon")} className="flex items-center gap-2 cursor-pointer text-[#97A0AF]">
                   <Copy className="h-4 w-4" /> Make a copy
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push(`/spaces/${spaceId}/pages/${page.id}`)} className="flex items-center gap-2 cursor-pointer">
+                <DropdownMenuItem onClick={() => setShowMoveModal(true)} className="flex items-center gap-2 cursor-pointer">
                   <Move className="h-4 w-4" /> Move
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
@@ -939,6 +941,13 @@ function PageItem({ page, allPages, spaceId, activePageId, depth, onRefresh, onC
             />
           ))}
         </div>
+      )}
+      {showMoveModal && (
+        <MovePageModal
+          pageId={page.id}
+          currentSpaceId={spaceId}
+          onClose={() => setShowMoveModal(false)}
+        />
       )}
     </div>
   );
