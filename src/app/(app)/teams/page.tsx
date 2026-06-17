@@ -450,10 +450,15 @@ function TeamDetailModal({ team, onClose }: { team: TeamDetail; onClose: () => v
       body: JSON.stringify({ email: addEmail.trim(), role: addRole }),
     });
     if (resp.ok) {
-      toast.success(`Added ${addEmail}`);
+      const data = await resp.json();
+      if (data.invited) {
+        toast.success(`Invite email sent to ${addEmail}`);
+      } else {
+        toast.success(`${addEmail} added to the team`);
+        const r = await fetch(`/api/teams/${team.id}/members`);
+        if (r.ok) setMembers(await r.json());
+      }
       setAddEmail("");
-      const r = await fetch(`/api/teams/${team.id}/members`);
-      if (r.ok) setMembers(await r.json());
     } else {
       const e = await resp.json();
       toast.error(e.error || "Failed to add member");

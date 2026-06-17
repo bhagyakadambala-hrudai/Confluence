@@ -55,10 +55,11 @@ export async function POST(
   const { email, role = "member" } = await request.json();
   if (!email) return NextResponse.json({ error: "Email is required" }, { status: 400 });
 
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || new URL(request.url).origin;
   const found = await lookupUserByEmail(admin, email);
+
   if (!found) {
-    // Send an invite email via Supabase auth so the person can sign up
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || new URL(request.url).origin;
+    // Completely new user — send a Supabase invite so they can sign up
     const { error: inviteError } = await admin.auth.admin.inviteUserByEmail(email, {
       redirectTo: `${appUrl}/auth/callback`,
     });
@@ -68,12 +69,19 @@ export async function POST(
         { status: 500 }
       );
     }
-    // Store a pending invite as a marker (no team_id column, so just record email+invited_by)
     await admin.from("pending_invites").insert({ email, invited_by: user.id });
     return NextResponse.json(
       { invited: true, message: `Invitation sent to ${email}` },
       { status: 200 }
     );
+  }
+
+  // User exists in auth but has never logged into Confluence — send them an invite link
+  if (found.needsInvite) {
+    await admin.auth.admin.inviteUserByEmail(email, {
+      redirectTo: `${appUrl}/auth/callback`,
+    });
+    // Continue to add them to the team — don't block on email failure
   }
 
   // Prevent duplicate
