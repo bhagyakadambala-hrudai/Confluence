@@ -274,9 +274,11 @@ function CreateTeamModal({ onClose, onCreated }: { onClose: () => void; onCreate
   const [emails, setEmails] = useState<string[]>([]);
   const [creating, setCreating] = useState(false);
   const [selectedGradientIndex, setSelectedGradientIndex] = useState<number | null>(null);
+  const [nameError, setNameError] = useState("");
 
   const gradientIndex = selectedGradientIndex !== null ? selectedGradientIndex : getGradientIndexFromName(name || "T");
   const gradient = TEAM_GRADIENTS[gradientIndex];
+  const initials = (name || "T").slice(0, 2).toUpperCase();
 
   function addEmail() {
     const val = emailInput.trim().toLowerCase();
@@ -291,11 +293,9 @@ function CreateTeamModal({ onClose, onCreated }: { onClose: () => void; onCreate
 
   async function handleCreate() {
     if (!name.trim()) return;
-    if (emails.length === 0) {
-      toast.error("Add at least 1 member to create a team.");
-      return;
-    }
+    if (emails.length === 0) { toast.error("Add at least 1 member to create a team."); return; }
     setCreating(true);
+    setNameError("");
 
     const resp = await fetch("/api/teams", {
       method: "POST",
@@ -305,14 +305,13 @@ function CreateTeamModal({ onClose, onCreated }: { onClose: () => void; onCreate
 
     if (!resp.ok) {
       const err = await resp.json().catch(() => ({}));
-      toast.error(err.error || "Failed to create team");
+      if (resp.status === 409) { setNameError(err.error || "Team name already exists."); }
+      else { toast.error(err.error || "Failed to create team"); }
       setCreating(false);
       return;
     }
 
     const team = await resp.json();
-
-    // Invite added emails
     const results = await Promise.allSettled(
       emails.map((email) =>
         fetch(`/api/teams/${team.id}/members`, {
@@ -320,79 +319,64 @@ function CreateTeamModal({ onClose, onCreated }: { onClose: () => void; onCreate
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, role: "member" }),
         }).then(async (r) => {
-          if (!r.ok) {
-            const e = await r.json().catch(() => ({}));
-            throw new Error(`${email}: ${e.error || "failed"}`);
-          }
+          if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(`${email}: ${e.error || "failed"}`); }
         })
       )
     );
 
-    const failed = results
-      .filter((r): r is PromiseRejectedResult => r.status === "rejected")
-      .map((r) => r.reason?.message);
-
-    if (failed.length > 0) {
-      toast.warning(`Team created. Could not invite: ${failed.join(", ")}`);
-    } else {
-      toast.success("Team created" + (emails.length > 0 ? ` and ${emails.length} member${emails.length > 1 ? "s" : ""} invited` : ""));
-    }
+    const failed = results.filter((r): r is PromiseRejectedResult => r.status === "rejected").map((r) => r.reason?.message);
+    if (failed.length > 0) toast.warning(`Team created. Could not invite: ${failed.join(", ")}`);
+    else toast.success(`Team created and ${emails.length} member${emails.length > 1 ? "s" : ""} invited`);
 
     setCreating(false);
     onCreated();
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white dark:bg-[#1B2A3B] rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#DFE1E6] dark:border-slate-700">
-          <h2 className="text-base font-semibold text-[#172B4D] dark:text-white">Create a new team</h2>
-          <button onClick={onClose} className="h-8 w-8 flex items-center justify-center text-[#6B778C] hover:text-[#172B4D] dark:hover:text-white hover:bg-[#F4F5F7] dark:hover:bg-slate-700 rounded-lg transition-colors">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+      <div className="bg-white dark:bg-[#1B2A3B] rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+
+        {/* Gradient banner header */}
+        <div className={`h-28 bg-gradient-to-r ${gradient} relative flex items-end px-6 pb-4`}>
+          <button onClick={onClose} className="absolute top-3 right-3 h-8 w-8 flex items-center justify-center bg-black/20 hover:bg-black/30 text-white rounded-full transition-colors">
             <X className="h-4 w-4" />
           </button>
+          <div className={`h-14 w-14 rounded-xl bg-gradient-to-br ${gradient} border-4 border-white dark:border-[#1B2A3B] flex items-center justify-center shadow-lg translate-y-7`}>
+            <span className="text-white font-bold text-lg">{initials}</span>
+          </div>
         </div>
 
-        <div className="px-6 py-5 space-y-4">
-          {/* Color picker row */}
-          <div>
-            <label className="block text-xs font-semibold text-[#172B4D] dark:text-slate-200 mb-2">Color</label>
-            <div className="flex items-center gap-2.5">
-              {GRADIENT_PICKER_COLORS.map((color, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setSelectedGradientIndex(idx)}
-                  className="relative h-7 w-7 rounded-full transition-transform hover:scale-110 focus:outline-none"
-                  style={{ backgroundColor: color }}
-                  title={`Color ${idx + 1}`}
-                >
-                  {gradientIndex === idx && (
-                    <span className="absolute inset-0 flex items-center justify-center">
-                      <span className="h-2.5 w-2.5 rounded-full bg-white/90 ring-2 ring-white/60" />
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
+        {/* Color picker below banner */}
+        <div className="flex items-center gap-2 px-6 pt-10 pb-2">
+          {GRADIENT_PICKER_COLORS.map((color, idx) => (
+            <button
+              key={idx}
+              onClick={() => setSelectedGradientIndex(idx)}
+              className="relative h-6 w-6 rounded-full transition-transform hover:scale-110 focus:outline-none"
+              style={{ backgroundColor: color }}
+            >
+              {gradientIndex === idx && (
+                <span className="absolute inset-0 flex items-center justify-center">
+                  <span className="h-2 w-2 rounded-full bg-white/90 ring-1 ring-white/60" />
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
 
-          {/* Preview avatar */}
-          <div className="flex justify-center py-2">
-            <div className={`h-20 w-20 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-lg`}>
-              <span className="text-white font-bold text-2xl">{(name || "T").slice(0, 2).toUpperCase()}</span>
-            </div>
-          </div>
-
+        <div className="px-6 pb-2 space-y-3">
           {/* Team name */}
           <div>
             <label className="block text-xs font-semibold text-[#172B4D] dark:text-slate-200 mb-1.5">Team name *</label>
             <input
               autoFocus
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => { setName(e.target.value); setNameError(""); }}
               onKeyDown={(e) => e.key === "Enter" && handleCreate()}
-              placeholder="e.g. Engineering, Marketing..."
-              className="w-full px-3 py-2 text-sm border border-[#DFE1E6] dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-[#172B4D] dark:text-slate-200 placeholder-[#97A0AF] focus:outline-none focus:ring-2 focus:ring-[#0052CC] focus:border-transparent"
+              placeholder="e.g. Engineering, Marketing…"
+              className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-slate-800 text-[#172B4D] dark:text-slate-200 placeholder-[#97A0AF] focus:outline-none focus:ring-2 focus:border-transparent transition-colors ${nameError ? "border-red-400 focus:ring-red-400" : "border-[#DFE1E6] dark:border-slate-600 focus:ring-[#0052CC]"}`}
             />
+            {nameError && <p className="text-xs text-red-500 mt-1">{nameError}</p>}
           </div>
 
           {/* Description */}
@@ -421,27 +405,14 @@ function CreateTeamModal({ onClose, onCreated }: { onClose: () => void; onCreate
                   className="bg-transparent outline-none text-sm text-[#172B4D] dark:text-slate-200 placeholder-[#97A0AF] w-full"
                 />
               </div>
-              <button
-                onClick={addEmail}
-                disabled={!emailInput.trim() || !emailInput.includes("@")}
-                className="px-3 h-9 text-sm font-medium text-white bg-[#0052CC] hover:bg-[#0065FF] rounded-lg transition-colors disabled:opacity-40"
-              >
-                Add
-              </button>
+              <button onClick={addEmail} disabled={!emailInput.trim() || !emailInput.includes("@")} className="px-3 h-9 text-sm font-medium text-white bg-[#0052CC] hover:bg-[#0065FF] rounded-lg transition-colors disabled:opacity-40">Add</button>
             </div>
-
-            {/* Email chips */}
             {emails.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-2">
                 {emails.map((email) => (
-                  <span
-                    key={email}
-                    className="flex items-center gap-1.5 px-2.5 py-1 bg-[#DEEBFF] dark:bg-blue-900/30 text-[#0052CC] dark:text-blue-400 text-xs font-medium rounded-full"
-                  >
+                  <span key={email} className="flex items-center gap-1.5 px-2.5 py-1 bg-[#DEEBFF] dark:bg-blue-900/30 text-[#0052CC] dark:text-blue-400 text-xs font-medium rounded-full">
                     {email}
-                    <button onClick={() => removeEmail(email)} className="hover:text-[#0747A6] transition-colors">
-                      <X className="h-3 w-3" />
-                    </button>
+                    <button onClick={() => removeEmail(email)} className="hover:text-[#0747A6] transition-colors"><X className="h-3 w-3" /></button>
                   </span>
                 ))}
               </div>
@@ -451,11 +422,7 @@ function CreateTeamModal({ onClose, onCreated }: { onClose: () => void; onCreate
 
         <div className="flex justify-end gap-2 px-6 py-4 border-t border-[#F4F5F7] dark:border-slate-700">
           <button onClick={onClose} className="px-4 py-2 text-sm text-[#42526E] dark:text-slate-300 hover:bg-[#F4F5F7] dark:hover:bg-slate-700 rounded-lg transition-colors">Cancel</button>
-          <button
-            onClick={handleCreate}
-            disabled={creating || !name.trim() || emails.length === 0}
-            className="px-4 py-2 text-sm font-semibold text-white bg-[#0052CC] hover:bg-[#0065FF] rounded-lg transition-colors disabled:opacity-50"
-          >
+          <button onClick={handleCreate} disabled={creating || !name.trim() || emails.length === 0} className="px-4 py-2 text-sm font-semibold text-white bg-[#0052CC] hover:bg-[#0065FF] rounded-lg transition-colors disabled:opacity-50">
             {creating ? "Creating…" : "Create team"}
           </button>
         </div>

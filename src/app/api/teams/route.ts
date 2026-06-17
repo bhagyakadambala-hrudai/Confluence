@@ -69,6 +69,16 @@ export async function POST(request: Request) {
   if (!name?.trim()) return NextResponse.json({ error: "Name is required" }, { status: 400 });
 
   const admin = createAdminClient();
+
+  // Check for duplicate name owned by this user
+  const { data: existing } = await admin
+    .from("teams")
+    .select("id")
+    .eq("owner_id", user.id)
+    .ilike("name", name.trim())
+    .maybeSingle();
+  if (existing) return NextResponse.json({ error: "A team with this name already exists." }, { status: 409 });
+
   const { data, error } = await admin
     .from("teams")
     .insert({ name: name.trim(), description: description?.trim() || "", owner_id: user.id })

@@ -36,7 +36,7 @@ export async function GET(
 
   const { data: profiles } = await admin
     .from("profiles")
-    .select("id, full_name, avatar_url")
+    .select("id, full_name, avatar_url, email")
     .in("id", userIds);
 
   const profileMap = Object.fromEntries((profiles || []).map((p: { id: string }) => [p.id, p]));
@@ -46,7 +46,8 @@ export async function GET(
     profiles: profileMap[m.user_id] ?? null,
   }));
 
-  return NextResponse.json({ ...team, members, ownerProfile: profileMap[team.owner_id] ?? null });
+  const my_role = isOwner ? "owner" : ((memberRows || []).find((m: { user_id: string; role: string }) => m.user_id === user.id)?.role ?? "member");
+  return NextResponse.json({ ...team, members, ownerProfile: profileMap[team.owner_id] ?? null, my_role });
 }
 
 export async function PATCH(
