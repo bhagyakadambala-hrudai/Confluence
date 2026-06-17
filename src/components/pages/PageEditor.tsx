@@ -5,18 +5,18 @@ import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import type { Editor as EditorType } from "@tiptap/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import LabelPicker from "./LabelPicker";
 import Toolbar from "@/components/editor/Toolbar";
 import { toast } from "sonner";
+import DOMPurify from "isomorphic-dompurify";
 import {
   Trash2, Loader2, MoreHorizontal, Link as LinkIcon,
   Lock, Table2, Info, List, ChevronRight,
-  FileText, History, ChevronDown, Image as ImageIcon,
-  Sparkles, ALargeSmall, ArrowLeftRight, CircleDot,
-  AlignJustify,
+  FileText, ChevronDown,
+  Eye, Search, Move, X, ArrowRight,
 } from "lucide-react";
 import ShareModal from "@/components/pages/ShareModal";
 import PublishModal from "@/components/pages/PublishModal";
+import MovePageModal from "@/components/pages/MovePageModal";
 import Link from "next/link";
 import { getInitials } from "@/lib/utils";
 import {
@@ -128,6 +128,13 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
   const [editor, setEditor] = useState<EditorType | null>(null);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showPublishModal, setShowPublishModal] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [showFindReplace, setShowFindReplace] = useState(false);
+  const [showMoveModal, setShowMoveModal] = useState(false);
+  const [findText, setFindText] = useState("");
+  const [replaceText, setReplaceText] = useState("");
+  const [matchCount, setMatchCount] = useState(0);
+  const findInputRef = useRef<HTMLInputElement>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSaved = useRef({ title: page.title, content: page.content || "" });
 
@@ -223,6 +230,70 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
     } catch {
       toast.error("Could not copy link");
     }
+  }
+
+  function openFindReplace() {
+    setShowFindReplace(true);
+    setTimeout(() => findInputRef.current?.focus(), 50);
+  }
+
+  useEffect(() => {
+    if (!findText || !editor) { setMatchCount(0); return; }
+    let count = 0;
+    editor.state.doc.descendants((node) => {
+      if (node.isText && node.text) {
+        const lower = node.text.toLowerCase();
+        const target = findText.toLowerCase();
+        let idx = 0;
+        while ((idx = lower.indexOf(target, idx)) !== -1) { count++; idx += target.length; }
+      }
+    });
+    setMatchCount(count);
+  }, [findText, editor, content]);
+
+  function handleReplaceOne() {
+    if (!editor || !findText) return;
+    const { doc, tr } = editor.state;
+    const target = findText.toLowerCase();
+    let replaced = false;
+    doc.descendants((node, pos) => {
+      if (replaced || !node.isText || !node.text) return;
+      const lower = node.text.toLowerCase();
+      const idx = lower.indexOf(target);
+      if (idx !== -1) {
+        editor.view.dispatch(
+          tr.insertText(replaceText, pos + idx, pos + idx + findText.length)
+        );
+        replaced = true;
+      }
+    });
+    if (!replaced) toast("No match found");
+  }
+
+  function handleReplaceAll() {
+    if (!editor || !findText) return;
+    const target = findText.toLowerCase();
+    let count = 0;
+    // Collect all positions first (reverse order to maintain offsets)
+    const positions: { from: number; to: number }[] = [];
+    editor.state.doc.descendants((node, pos) => {
+      if (!node.isText || !node.text) return;
+      const lower = node.text.toLowerCase();
+      let idx = 0;
+      while ((idx = lower.indexOf(target, idx)) !== -1) {
+        positions.push({ from: pos + idx, to: pos + idx + findText.length });
+        idx += target.length;
+        count++;
+      }
+    });
+    if (positions.length === 0) { toast("No matches found"); return; }
+    // Apply in reverse order so positions stay valid
+    let tr = editor.state.tr;
+    for (let i = positions.length - 1; i >= 0; i--) {
+      tr = tr.insertText(replaceText, positions[i].from, positions[i].to);
+    }
+    editor.view.dispatch(tr);
+    toast.success(`Replaced ${count} occurrence${count !== 1 ? "s" : ""}`);
   }
 
   function handleQuickInsert(type: string) {
@@ -345,27 +416,23 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-52">
-                <DropdownMenuItem asChild>
-                  <Link href={`/spaces/${page.space_id}/pages/${page.id}/history`} className="flex items-center gap-2">
-                    <History className="h-4 w-4" /> Page history
-                  </Link>
+                <DropdownMenuItem onClick={() => setShowPreview(true)} className="flex items-center gap-2 cursor-pointer">
+                  <Eye className="h-4 w-4" /> Preview
                 </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <LabelPicker
-                    spaceId={page.space_id}
-                    availableLabels={labels}
-                    selectedLabelIds={pageLabels}
-                    onChange={handleLabelChange}
-                  />
+                <DropdownMenuItem onClick={openFindReplace} className="flex items-center gap-2 cursor-pointer">
+                  <Search className="h-4 w-4" /> Find and replace
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowMoveModal(true)} className="flex items-center gap-2 cursor-pointer">
+                  <Move className="h-4 w-4" /> Move
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 {!deleteConfirm ? (
-                  <DropdownMenuItem onClick={() => setDeleteConfirm(true)} className="text-red-600 focus:text-red-600">
-                    <Trash2 className="h-4 w-4 mr-2" /> Delete page
+                  <DropdownMenuItem onClick={() => setDeleteConfirm(true)} className="flex items-center gap-2 cursor-pointer text-red-600 focus:text-red-600">
+                    <Trash2 className="h-4 w-4" /> Delete
                   </DropdownMenuItem>
                 ) : (
-                  <DropdownMenuItem onClick={handleDelete} className="text-red-600 font-semibold focus:text-red-600">
-                    Confirm delete
+                  <DropdownMenuItem onClick={handleDelete} className="flex items-center gap-2 cursor-pointer text-red-600 font-semibold focus:text-red-600">
+                    <Trash2 className="h-4 w-4" /> Confirm delete
                   </DropdownMenuItem>
                 )}
               </DropdownMenuContent>
@@ -375,6 +442,52 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
 
         {/* Row 2: Toolbar (shown once editor is ready) */}
         {editor && <Toolbar editor={editor} />}
+
+        {/* Row 3: Find & Replace bar */}
+        {showFindReplace && (
+          <div className="flex items-center gap-2 px-4 py-2 border-b border-[#DFE1E6] dark:border-slate-700 bg-[#F8F9FA] dark:bg-[#161B22]">
+            <Search className="h-3.5 w-3.5 text-[#6B778C] shrink-0" />
+            <input
+              ref={findInputRef}
+              value={findText}
+              onChange={(e) => setFindText(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") handleReplaceOne(); if (e.key === "Escape") setShowFindReplace(false); }}
+              placeholder="Find"
+              className="w-36 h-7 px-2 text-sm border border-[#DFE1E6] dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-[#172B4D] dark:text-slate-200 outline-none focus:border-[#0052CC]"
+            />
+            <ArrowRight className="h-3.5 w-3.5 text-[#6B778C] shrink-0" />
+            <input
+              value={replaceText}
+              onChange={(e) => setReplaceText(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Escape") setShowFindReplace(false); }}
+              placeholder="Replace"
+              className="w-36 h-7 px-2 text-sm border border-[#DFE1E6] dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-[#172B4D] dark:text-slate-200 outline-none focus:border-[#0052CC]"
+            />
+            {findText && (
+              <span className="text-xs text-[#6B778C] dark:text-slate-400 shrink-0 min-w-[4ch]">
+                {matchCount} {matchCount === 1 ? "match" : "matches"}
+              </span>
+            )}
+            <button
+              onClick={handleReplaceOne}
+              className="px-3 h-7 text-xs border border-[#DFE1E6] dark:border-slate-600 rounded hover:bg-[#EBECF0] dark:hover:bg-slate-700 text-[#172B4D] dark:text-slate-200 transition-colors shrink-0"
+            >
+              Replace
+            </button>
+            <button
+              onClick={handleReplaceAll}
+              className="px-3 h-7 text-xs border border-[#DFE1E6] dark:border-slate-600 rounded hover:bg-[#EBECF0] dark:hover:bg-slate-700 text-[#172B4D] dark:text-slate-200 transition-colors shrink-0"
+            >
+              Replace all
+            </button>
+            <button
+              onClick={() => { setShowFindReplace(false); setFindText(""); setReplaceText(""); }}
+              className="ml-auto h-7 w-7 flex items-center justify-center rounded hover:bg-[#EBECF0] dark:hover:bg-slate-700 text-[#6B778C] transition-colors shrink-0"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ── Page content ── */}
@@ -461,6 +574,55 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
         parentPage={parentPage}
         onPublish={handlePublish}
         onClose={() => setShowPublishModal(false)}
+      />
+    )}
+    {showPreview && (
+      <div className="fixed inset-0 z-50 bg-white dark:bg-[#1B2A3B] overflow-y-auto">
+        <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-3 border-b border-[#E8EAED] dark:border-slate-700 bg-white dark:bg-[#1B2A3B]">
+          <nav className="flex items-center gap-1.5 text-sm text-[#6B778C] dark:text-slate-400">
+            {space && <span className="text-[#172B4D] dark:text-slate-200 font-medium">{space.emoji} {space.name}</span>}
+            {space && <span>/</span>}
+            {parentPage && <><span className="truncate max-w-[120px]">{parentPage.title}</span><span>/</span></>}
+            <span className="text-[#0052CC] dark:text-blue-400 font-medium truncate max-w-[200px]">{title || "Untitled"}</span>
+          </nav>
+          <button
+            onClick={() => setShowPreview(false)}
+            className="flex items-center gap-1.5 px-4 py-1.5 text-sm bg-[#0052CC] hover:bg-[#0065FF] text-white rounded font-semibold transition-colors"
+          >
+            <X className="h-3.5 w-3.5" /> Close preview
+          </button>
+        </div>
+        <div className="max-w-4xl mx-auto px-8 md:px-16 py-10">
+          <h1 className="text-[2.6rem] font-bold text-[#172B4D] dark:text-white leading-tight mb-4">
+            {page.emoji && <span className="mr-2">{page.emoji}</span>}
+            {title || "Untitled"}
+          </h1>
+          <div className="flex items-center gap-2 mb-8">
+            <Avatar className="h-6 w-6">
+              <AvatarFallback className="text-[10px] bg-[#0052CC] text-white font-bold">
+                {getInitials(page.profiles?.full_name || "?")}
+              </AvatarFallback>
+            </Avatar>
+            <span className="text-sm text-[#6B778C] dark:text-slate-400">
+              By <span className="text-[#172B4D] dark:text-slate-200 font-medium">{page.profiles?.full_name || "Unknown"}</span>
+            </span>
+          </div>
+          {content ? (
+            <div
+              className="prose prose-slate dark:prose-invert max-w-none"
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }}
+            />
+          ) : (
+            <p className="text-[#97A0AF] italic">No content yet.</p>
+          )}
+        </div>
+      </div>
+    )}
+    {showMoveModal && (
+      <MovePageModal
+        pageId={page.id}
+        currentSpaceId={page.space_id}
+        onClose={() => setShowMoveModal(false)}
       />
     )}
     </>
