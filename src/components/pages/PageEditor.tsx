@@ -396,22 +396,13 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
               </AvatarFallback>
             </Avatar>
 
-            {/* Publish — split button */}
-            <div className="flex items-center rounded-md overflow-hidden shadow-sm">
-              <button
-                onClick={handleOpenPublishModal}
-                className="flex items-center px-4 h-9 bg-[#0052CC] hover:bg-[#0065FF] text-white text-sm font-semibold transition-colors"
-              >
-                Publish…
-              </button>
-              <div className="w-px h-9 bg-white/25 shrink-0" />
-              <button
-                onClick={handleOpenPublishModal}
-                className="flex items-center justify-center px-2 h-9 bg-[#0052CC] hover:bg-[#0065FF] text-white transition-colors"
-              >
-                <ChevronDown className="h-4 w-4" />
-              </button>
-            </div>
+            {/* Publish button */}
+            <button
+              onClick={handleOpenPublishModal}
+              className="flex items-center px-4 h-9 bg-[#0052CC] hover:bg-[#0065FF] text-white text-sm font-semibold rounded-md transition-colors"
+            >
+              Publish…
+            </button>
 
             {/* Close */}
             <button
