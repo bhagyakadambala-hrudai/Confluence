@@ -180,30 +180,6 @@ export default function SpaceEditorClient({ space, currentUserId }: { space: Spa
         {/* Editor area */}
         <div className="max-w-4xl mx-auto w-full px-8 md:px-16 pt-16 pb-16">
 
-          {/* Meta action bar */}
-          <div className="flex items-center gap-0.5 mb-5 -ml-1">
-            <button className="flex items-center gap-1.5 px-2 py-1 rounded text-xs text-[#6B778C] dark:text-slate-400 hover:bg-[#F4F5F7] dark:hover:bg-slate-700 transition-colors">
-              <AlignJustify className="h-3.5 w-3.5" />
-              <ChevronDown className="h-3 w-3" />
-            </button>
-            <div className="w-px h-4 bg-[#DFE1E6] dark:bg-slate-600 mx-1" />
-            <button className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs text-[#42526E] dark:text-slate-300 hover:bg-[#F4F5F7] dark:hover:bg-slate-700 transition-colors">
-              <Smile className="h-3.5 w-3.5" />
-              <span>Emoji</span>
-            </button>
-            <button className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs text-[#42526E] dark:text-slate-300 hover:bg-[#F4F5F7] dark:hover:bg-slate-700 transition-colors">
-              <Sparkles className="h-3.5 w-3.5" />
-              <span>Suggest title</span>
-            </button>
-            <div className="w-px h-4 bg-[#DFE1E6] dark:bg-slate-600 mx-1" />
-            <button className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs text-[#42526E] dark:text-slate-300 hover:bg-[#F4F5F7] dark:hover:bg-slate-700 transition-colors">
-              <ALargeSmall className="h-3.5 w-3.5" />
-            </button>
-            <button className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs text-[#42526E] dark:text-slate-300 hover:bg-[#F4F5F7] dark:hover:bg-slate-700 transition-colors">
-              <ArrowLeftRight className="h-3.5 w-3.5" />
-              <ChevronDown className="h-3 w-3" />
-            </button>
-          </div>
 
           {/* Space name (editable title) */}
           <input
