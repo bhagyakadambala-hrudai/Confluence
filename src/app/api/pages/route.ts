@@ -53,7 +53,7 @@ export async function POST(request: Request) {
   const baseInsert = {
     space_id,
     parent_id: parent_id || null,
-    title: title || "Untitled",
+    title: title ?? "",
     content: content || "",
     emoji: emoji || "📄",
     author_id: user.id,
