@@ -138,15 +138,11 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSaved = useRef({ title: page.title, content: page.content || "" });
 
-  const [isPreviewing, setIsPreviewing] = useState(false);
-  const contentRef = useRef(page.content || "");
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
 
   const authorName = page.profiles?.full_name || "Unknown";
   const authorAvatar = page.profiles?.avatar_url;
   const isEmpty = !content || content === "<p></p>" || content.replace(/<[^>]*>/g, "").trim() === "";
-
-  // Keep contentRef in sync so hover-leave can restore without stale closure
-  useEffect(() => { contentRef.current = content; }, [content]);
 
   const save = useCallback(async (t: string, c: string) => {
     setSaveStatus("saving");
@@ -297,7 +293,7 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
   }
 
   function handleQuickInsert(type: string) {
-    setIsPreviewing(false);
+    setPreviewHtml(null);
     if (!editor) return;
     if (type === "table") {
       editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
@@ -531,7 +527,7 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
         </div>
 
         {/* Editor (toolbar managed externally) */}
-        <div className="min-h-[200px]">
+        <div className="min-h-[200px] relative">
           <Editor
             content={content}
             onChange={setContent}
@@ -539,6 +535,15 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
             placeholder=""
             onEditorReady={setEditor}
           />
+          {/* Template hover preview overlay — shown while hovering a template in the bar below */}
+          {previewHtml && (
+            <div className="absolute inset-0 bg-white dark:bg-[#1B2A3B] pointer-events-none overflow-auto">
+              <div
+                className="prose prose-slate dark:prose-invert max-w-none"
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(previewHtml) }}
+              />
+            </div>
+          )}
         </div>
 
         {/* Quick-insert bar — inline card below editor, only when empty */}
@@ -546,12 +551,8 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
           <div className="mt-10">
             <QuickInsertBar
               onInsert={handleQuickInsert}
-              onHover={(html) => {
-                if (editor) { editor.commands.setContent(html, false); setIsPreviewing(true); }
-              }}
-              onLeave={() => {
-                if (editor) { editor.commands.setContent(contentRef.current || "", false); setIsPreviewing(false); }
-              }}
+              onHover={(html) => setPreviewHtml(html)}
+              onLeave={() => setPreviewHtml(null)}
             />
           </div>
         )}
