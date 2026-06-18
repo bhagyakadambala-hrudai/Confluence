@@ -69,14 +69,14 @@ function Kbd({ children }: { children: string }) {
 }
 
 const TEXT_STYLES = [
-  { label: "Normal text", value: 0,       kbd: "Ctrl+Alt+0", icon: <Pilcrow   className="h-4 w-4" />, labelClass: "text-sm" },
-  { label: "Heading 1",   value: 1,       kbd: "Ctrl+Alt+1", icon: <Heading1  className="h-4 w-4" />, labelClass: "text-xl font-bold" },
-  { label: "Heading 2",   value: 2,       kbd: "Ctrl+Alt+2", icon: <Heading2  className="h-4 w-4" />, labelClass: "text-lg font-semibold" },
-  { label: "Heading 3",   value: 3,       kbd: "Ctrl+Alt+3", icon: <Heading3  className="h-4 w-4" />, labelClass: "text-base font-semibold" },
-  { label: "Heading 4",   value: 4,       kbd: "Ctrl+Alt+4", icon: <span className="text-[10px] font-bold leading-none">H₄</span>, labelClass: "text-sm font-semibold" },
-  { label: "Heading 5",   value: 5,       kbd: "Ctrl+Alt+5", icon: <span className="text-[10px] font-bold leading-none">H₅</span>, labelClass: "text-sm font-medium" },
-  { label: "Heading 6",   value: 6,       kbd: "Ctrl+Alt+6", icon: <span className="text-[10px] font-bold leading-none">H₆</span>, labelClass: "text-sm font-medium text-[#6B778C]" },
-  { label: "Quote",       value: "quote", kbd: "Ctrl+Shift+9", icon: <Quote className="h-4 w-4" />, labelClass: "text-sm italic" },
+  { label: "Normal text", value: "normal", kbd: "Ctrl+Alt+0", fontSize: null,     icon: <Pilcrow   className="h-4 w-4" />, labelClass: "text-sm" },
+  { label: "Heading 1",   value: "h1",     kbd: "Ctrl+Alt+1", fontSize: "2em",    icon: <Heading1  className="h-4 w-4" />, labelClass: "text-xl font-bold" },
+  { label: "Heading 2",   value: "h2",     kbd: "Ctrl+Alt+2", fontSize: "1.5em",  icon: <Heading2  className="h-4 w-4" />, labelClass: "text-lg font-semibold" },
+  { label: "Heading 3",   value: "h3",     kbd: "Ctrl+Alt+3", fontSize: "1.25em", icon: <Heading3  className="h-4 w-4" />, labelClass: "text-base font-semibold" },
+  { label: "Heading 4",   value: "h4",     kbd: "Ctrl+Alt+4", fontSize: "1.1em",  icon: <span className="text-[10px] font-bold leading-none">H₄</span>, labelClass: "text-sm font-semibold" },
+  { label: "Heading 5",   value: "h5",     kbd: "Ctrl+Alt+5", fontSize: "1em",    icon: <span className="text-[10px] font-bold leading-none">H₅</span>, labelClass: "text-sm font-medium" },
+  { label: "Heading 6",   value: "h6",     kbd: "Ctrl+Alt+6", fontSize: "0.85em", icon: <span className="text-[10px] font-bold leading-none">H₆</span>, labelClass: "text-sm font-medium text-[#6B778C]" },
+  { label: "Quote",       value: "quote",  kbd: "Ctrl+Shift+9", fontSize: null,   icon: <Quote className="h-4 w-4" />, labelClass: "text-sm italic" },
 ];
 
 /* ── Table size grid picker ── */
@@ -323,11 +323,14 @@ export default function Toolbar({ editor }: ToolbarProps) {
     }
   }
 
-  const currentStyle = TEXT_STYLES.find((s) => {
-    if (s.value === "quote") return editor.isActive("blockquote");
-    if (s.value === 0) return !editor.isActive("heading") && !editor.isActive("blockquote");
-    return editor.isActive("heading", { level: s.value as 1|2|3|4|5|6 });
-  }) ?? TEXT_STYLES[0];
+  const activeFontSize: string | null =
+    editor.getAttributes("textStyle").fontSize ?? null;
+  const currentStyle =
+    TEXT_STYLES.find((s) => {
+      if (s.value === "quote") return editor.isActive("blockquote");
+      if (s.value === "normal") return !activeFontSize && !editor.isActive("blockquote");
+      return s.fontSize !== null && activeFontSize === s.fontSize;
+    }) ?? TEXT_STYLES[0];
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -359,17 +362,21 @@ export default function Toolbar({ editor }: ToolbarProps) {
             {TEXT_STYLES.map((s) => {
               const isActive = s.value === "quote"
                 ? editor.isActive("blockquote")
-                : s.value === 0
-                  ? !editor.isActive("heading") && !editor.isActive("blockquote")
-                  : editor.isActive("heading", { level: s.value as 1|2|3|4|5|6 });
+                : s.value === "normal"
+                  ? !activeFontSize && !editor.isActive("blockquote")
+                  : s.fontSize !== null && activeFontSize === s.fontSize;
               return (
                 <DropdownMenuItem
-                  key={String(s.value)}
+                  key={s.value}
                   className={cn("flex items-center gap-2", isActive && "bg-[#DEEBFF] dark:bg-blue-900/20")}
                   onClick={() => {
-                    if (s.value === "quote") editor.chain().focus().toggleBlockquote().run();
-                    else if (s.value === 0) editor.chain().focus().setParagraph().run();
-                    else editor.chain().focus().toggleHeading({ level: s.value as 1|2|3|4|5|6 }).run();
+                    if (s.value === "quote") {
+                      editor.chain().focus().toggleBlockquote().run();
+                    } else if (s.value === "normal") {
+                      editor.chain().focus().unsetFontSize().run();
+                    } else if (s.fontSize) {
+                      editor.chain().focus().setFontSize(s.fontSize).run();
+                    }
                   }}
                 >
                   <span className="text-[#6B778C] w-4 flex items-center justify-center shrink-0">{s.icon}</span>

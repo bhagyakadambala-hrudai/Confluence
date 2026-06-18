@@ -21,6 +21,7 @@ import TableHeader from "@tiptap/extension-table-header";
 import Placeholder from "@tiptap/extension-placeholder";
 import { common, createLowlight } from "lowlight";
 import Toolbar from "./Toolbar";
+import FontSizeExtension from "./FontSizeExtension";
 import { useEffect } from "react";
 
 const lowlight = createLowlight(common);
@@ -49,6 +50,7 @@ export default function Editor({
       Subscript,
       Superscript,
       TextStyle,
+      FontSizeExtension,
       Color,
       Highlight.configure({ multicolor: true }),
       TaskList,
