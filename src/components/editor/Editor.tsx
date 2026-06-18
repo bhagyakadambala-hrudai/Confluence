@@ -7,6 +7,7 @@ import Underline from "@tiptap/extension-underline";
 import Subscript from "@tiptap/extension-subscript";
 import Superscript from "@tiptap/extension-superscript";
 import TextStyle from "@tiptap/extension-text-style";
+import TextAlign from "@tiptap/extension-text-align";
 import Color from "@tiptap/extension-color";
 import Highlight from "@tiptap/extension-highlight";
 import TaskList from "@tiptap/extension-task-list";
@@ -51,6 +52,7 @@ export default function Editor({
       Superscript,
       TextStyle,
       FontSizeExtension,
+      TextAlign.configure({ types: ["heading", "paragraph"] }),
       Color,
       Highlight.configure({ multicolor: true }),
       TaskList,

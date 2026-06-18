@@ -521,7 +521,11 @@ export default function Toolbar({ editor }: ToolbarProps) {
         <Sep />
 
         {/* Alignment */}
-        <Btn title="Align left" onClick={() => {}}>
+        <Btn
+          title="Align left (Ctrl+Shift+L)"
+          active={editor.isActive({ textAlign: "left" })}
+          onClick={() => editor.chain().focus().setTextAlign("left").run()}
+        >
           <AlignLeft className="h-3.5 w-3.5" />
         </Btn>
         <DropdownMenu>
@@ -531,16 +535,28 @@ export default function Toolbar({ editor }: ToolbarProps) {
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-44">
-            <DropdownMenuItem onClick={() => {}} className="flex items-center gap-2">
+            <DropdownMenuItem
+              onClick={() => editor.chain().focus().setTextAlign("left").run()}
+              className={cn("flex items-center gap-2", editor.isActive({ textAlign: "left" }) && "bg-[#DEEBFF] dark:bg-blue-900/20")}
+            >
               <AlignLeft className="h-4 w-4" /> <span className="flex-1">Left</span> <Kbd>Ctrl+Shift+L</Kbd>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => {}} className="flex items-center gap-2">
+            <DropdownMenuItem
+              onClick={() => editor.chain().focus().setTextAlign("center").run()}
+              className={cn("flex items-center gap-2", editor.isActive({ textAlign: "center" }) && "bg-[#DEEBFF] dark:bg-blue-900/20")}
+            >
               <AlignCenter className="h-4 w-4" /> <span className="flex-1">Center</span> <Kbd>Ctrl+Shift+E</Kbd>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => {}} className="flex items-center gap-2">
+            <DropdownMenuItem
+              onClick={() => editor.chain().focus().setTextAlign("right").run()}
+              className={cn("flex items-center gap-2", editor.isActive({ textAlign: "right" }) && "bg-[#DEEBFF] dark:bg-blue-900/20")}
+            >
               <AlignRight className="h-4 w-4" /> <span className="flex-1">Right</span> <Kbd>Ctrl+Shift+R</Kbd>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => {}} className="flex items-center gap-2">
+            <DropdownMenuItem
+              onClick={() => editor.chain().focus().setTextAlign("justify").run()}
+              className={cn("flex items-center gap-2", editor.isActive({ textAlign: "justify" }) && "bg-[#DEEBFF] dark:bg-blue-900/20")}
+            >
               <AlignJustify className="h-4 w-4" /> <span className="flex-1">Justify</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
