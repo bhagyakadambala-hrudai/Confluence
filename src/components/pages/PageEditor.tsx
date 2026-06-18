@@ -397,15 +397,19 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
             </Avatar>
 
             {/* Publish — split button */}
-            <div className="flex items-center">
+            <div className="flex items-center rounded-md overflow-hidden shadow-sm">
               <button
                 onClick={handleOpenPublishModal}
-                className="flex items-center gap-1 px-3 h-8 bg-[#0052CC] hover:bg-[#0065FF] text-white text-sm font-semibold rounded-l transition-colors"
+                className="flex items-center px-4 h-9 bg-[#0052CC] hover:bg-[#0065FF] text-white text-sm font-semibold transition-colors"
               >
                 Publish…
               </button>
-              <button className="flex items-center px-1.5 h-8 bg-[#0052CC] hover:bg-[#0065FF] text-white rounded-r border-l border-white/20 transition-colors">
-                <ChevronDown className="h-3.5 w-3.5" />
+              <div className="w-px h-9 bg-white/25 shrink-0" />
+              <button
+                onClick={handleOpenPublishModal}
+                className="flex items-center justify-center px-2 h-9 bg-[#0052CC] hover:bg-[#0065FF] text-white transition-colors"
+              >
+                <ChevronDown className="h-4 w-4" />
               </button>
             </div>
 
