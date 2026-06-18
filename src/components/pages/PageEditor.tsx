@@ -595,27 +595,13 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
           </button>
         </div>
         <div className="max-w-4xl mx-auto px-8 md:px-16 py-10">
-          <h1 className="text-[2.6rem] font-bold text-[#172B4D] dark:text-white leading-tight mb-4">
-            {page.emoji && <span className="mr-2">{page.emoji}</span>}
-            {title || "Untitled"}
-          </h1>
-          <div className="flex items-center gap-2 mb-8">
-            <Avatar className="h-6 w-6">
-              <AvatarFallback className="text-[10px] bg-[#0052CC] text-white font-bold">
-                {getInitials(page.profiles?.full_name || "?")}
-              </AvatarFallback>
-            </Avatar>
-            <span className="text-sm text-[#6B778C] dark:text-slate-400">
-              By <span className="text-[#172B4D] dark:text-slate-200 font-medium">{page.profiles?.full_name || "Unknown"}</span>
-            </span>
-          </div>
           {content ? (
             <div
               className="prose prose-slate dark:prose-invert max-w-none"
               dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }}
             />
           ) : (
-            <p className="text-[#97A0AF] italic">No content yet.</p>
+            <p className="text-[#97A0AF] dark:text-slate-500 italic">No content yet.</p>
           )}
         </div>
       </div>
