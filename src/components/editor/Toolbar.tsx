@@ -69,10 +69,14 @@ function Kbd({ children }: { children: string }) {
 }
 
 const TEXT_STYLES = [
-  { label: "Normal text", value: 0, icon: <Pilcrow className="h-4 w-4" />, className: "text-sm" },
-  { label: "Heading 1",   value: 1, icon: <Heading1 className="h-4 w-4" />, className: "text-xl font-bold" },
-  { label: "Heading 2",   value: 2, icon: <Heading2 className="h-4 w-4" />, className: "text-lg font-semibold" },
-  { label: "Heading 3",   value: 3, icon: <Heading3 className="h-4 w-4" />, className: "text-base font-semibold" },
+  { label: "Normal text", value: 0,       kbd: "Ctrl+Alt+0", icon: <Pilcrow   className="h-4 w-4" />, labelClass: "text-sm" },
+  { label: "Heading 1",   value: 1,       kbd: "Ctrl+Alt+1", icon: <Heading1  className="h-4 w-4" />, labelClass: "text-xl font-bold" },
+  { label: "Heading 2",   value: 2,       kbd: "Ctrl+Alt+2", icon: <Heading2  className="h-4 w-4" />, labelClass: "text-lg font-semibold" },
+  { label: "Heading 3",   value: 3,       kbd: "Ctrl+Alt+3", icon: <Heading3  className="h-4 w-4" />, labelClass: "text-base font-semibold" },
+  { label: "Heading 4",   value: 4,       kbd: "Ctrl+Alt+4", icon: <span className="text-[10px] font-bold leading-none">H₄</span>, labelClass: "text-sm font-semibold" },
+  { label: "Heading 5",   value: 5,       kbd: "Ctrl+Alt+5", icon: <span className="text-[10px] font-bold leading-none">H₅</span>, labelClass: "text-sm font-medium" },
+  { label: "Heading 6",   value: 6,       kbd: "Ctrl+Alt+6", icon: <span className="text-[10px] font-bold leading-none">H₆</span>, labelClass: "text-sm font-medium text-[#6B778C]" },
+  { label: "Quote",       value: "quote", kbd: "Ctrl+Shift+9", icon: <Quote className="h-4 w-4" />, labelClass: "text-sm italic" },
 ];
 
 /* ── Table size grid picker ── */
@@ -319,9 +323,11 @@ export default function Toolbar({ editor }: ToolbarProps) {
     }
   }
 
-  const currentStyle = TEXT_STYLES.find((s) =>
-    s.value === 0 ? !editor.isActive("heading") : editor.isActive("heading", { level: s.value })
-  ) ?? TEXT_STYLES[0];
+  const currentStyle = TEXT_STYLES.find((s) => {
+    if (s.value === "quote") return editor.isActive("blockquote");
+    if (s.value === 0) return !editor.isActive("heading") && !editor.isActive("blockquote");
+    return editor.isActive("heading", { level: s.value as 1|2|3|4|5|6 });
+  }) ?? TEXT_STYLES[0];
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -349,27 +355,36 @@ export default function Toolbar({ editor }: ToolbarProps) {
               <ChevronDown className="h-3 w-3 text-[#6B778C] shrink-0" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-48">
-            {TEXT_STYLES.map((s) => (
-              <DropdownMenuItem
-                key={s.value}
-                className="flex items-center gap-2"
-                onClick={() => {
-                  if (s.value === 0) editor.chain().focus().setParagraph().run();
-                  else editor.chain().focus().toggleHeading({ level: s.value as 1|2|3 }).run();
-                }}
-              >
-                <span className="text-[#6B778C]">{s.icon}</span>
-                <span className={s.className}>{s.label}</span>
-              </DropdownMenuItem>
-            ))}
+          <DropdownMenuContent align="start" className="w-56">
+            {TEXT_STYLES.map((s) => {
+              const isActive = s.value === "quote"
+                ? editor.isActive("blockquote")
+                : s.value === 0
+                  ? !editor.isActive("heading") && !editor.isActive("blockquote")
+                  : editor.isActive("heading", { level: s.value as 1|2|3|4|5|6 });
+              return (
+                <DropdownMenuItem
+                  key={String(s.value)}
+                  className={cn("flex items-center gap-2", isActive && "bg-[#DEEBFF] dark:bg-blue-900/20")}
+                  onClick={() => {
+                    if (s.value === "quote") editor.chain().focus().toggleBlockquote().run();
+                    else if (s.value === 0) editor.chain().focus().setParagraph().run();
+                    else editor.chain().focus().toggleHeading({ level: s.value as 1|2|3|4|5|6 }).run();
+                  }}
+                >
+                  <span className="text-[#6B778C] w-4 flex items-center justify-center shrink-0">{s.icon}</span>
+                  <span className={cn("flex-1", s.labelClass)}>{s.label}</span>
+                  <Kbd>{s.kbd}</Kbd>
+                </DropdownMenuItem>
+              );
+            })}
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={() => editor.chain().focus().clearNodes().unsetAllMarks().run()}
               className="flex items-center gap-2"
             >
               <RemoveFormatting className="h-4 w-4 text-[#6B778C]" />
-              <span>Clear formatting</span>
+              <span className="flex-1">Clear formatting</span>
               <Kbd>Ctrl+\</Kbd>
             </DropdownMenuItem>
           </DropdownMenuContent>
