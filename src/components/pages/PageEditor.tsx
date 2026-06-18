@@ -336,13 +336,11 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
           </button>
         </div>
         <div className="max-w-4xl mx-auto w-full px-8 md:px-16 py-10">
-          {content ? (
+          {content && (
             <div
               className="prose prose-slate dark:prose-invert max-w-none"
               dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }}
             />
-          ) : (
-            <p className="text-[#97A0AF] dark:text-slate-500 italic">No content yet.</p>
           )}
         </div>
       </div>
