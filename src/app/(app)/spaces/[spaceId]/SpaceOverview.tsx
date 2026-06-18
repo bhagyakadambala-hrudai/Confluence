@@ -520,42 +520,13 @@ export default function SpaceOverview({
                 <MoreHorizontal className="h-4 w-4" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem onClick={handleStar} className="flex items-center gap-2 cursor-pointer">
                 <Star className={`h-4 w-4 ${isStarred ? "fill-yellow-400 text-yellow-400" : ""}`} />
-                <span className="flex-1">Star space</span>
-                <span className="text-xs text-[#97A0AF]">Ctrl Alt F</span>
+                Star space
               </DropdownMenuItem>
-              <DropdownMenuItem className="flex items-center gap-2 cursor-pointer">
-                <Eye className="h-4 w-4" />
-                <span className="flex-1">Watch settings</span>
-                <ChevronRight className="h-3.5 w-3.5 text-[#97A0AF]" />
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="flex items-center gap-2 cursor-pointer">
-                <Clock className="h-4 w-4" /> Version history
-              </DropdownMenuItem>
-              <DropdownMenuItem className="flex items-center gap-2 cursor-pointer">
-                <Info className="h-4 w-4" />
-                <span className="flex-1">Advanced details</span>
-                <ChevronRight className="h-3.5 w-3.5 text-[#97A0AF]" />
-              </DropdownMenuItem>
-              <DropdownMenuItem className="flex items-center gap-2 cursor-pointer">
-                <Grid className="h-4 w-4" />
-                <span className="flex-1">Apps</span>
-                <ChevronRight className="h-3.5 w-3.5 text-[#97A0AF]" />
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
               <DropdownMenuItem className="flex items-center gap-2 cursor-pointer">
                 <Copy className="h-4 w-4" /> Make a copy
-              </DropdownMenuItem>
-              <DropdownMenuItem className="flex items-center gap-2 cursor-pointer">
-                <MoveRight className="h-4 w-4" /> Move
-              </DropdownMenuItem>
-              <DropdownMenuItem className="flex items-center gap-2 cursor-pointer">
-                <Upload className="h-4 w-4" />
-                <span className="flex-1">Export</span>
-                <ChevronRight className="h-3.5 w-3.5 text-[#97A0AF]" />
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuSub>
