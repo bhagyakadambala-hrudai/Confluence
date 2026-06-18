@@ -9,6 +9,9 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Confluence",
   description: "A powerful wiki and knowledge base for your team",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({
