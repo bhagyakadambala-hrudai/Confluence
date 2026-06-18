@@ -37,7 +37,7 @@ function Btn({ onClick, active, disabled, title, children }: {
       <TooltipTrigger asChild>
         <button
           type="button"
-          onClick={onClick}
+          onMouseDown={(e) => { e.preventDefault(); onClick(); }}
           disabled={disabled}
           className={cn(
             "h-7 w-7 flex items-center justify-center rounded text-sm transition-colors shrink-0",
@@ -358,7 +358,7 @@ export default function Toolbar({ editor }: ToolbarProps) {
               <ChevronDown className="h-3 w-3 text-[#6B778C] shrink-0" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-56">
+          <DropdownMenuContent onCloseAutoFocus={(e) => e.preventDefault()} align="start" className="w-56">
             {TEXT_STYLES.map((s) => {
               const isActive = s.value === "quote"
                 ? editor.isActive("blockquote")
@@ -415,7 +415,7 @@ export default function Toolbar({ editor }: ToolbarProps) {
               <ChevronDown className="h-3 w-3" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-56">
+          <DropdownMenuContent onCloseAutoFocus={(e) => e.preventDefault()} align="start" className="w-56">
             <DropdownMenuItem
               onClick={() => editor.chain().focus().toggleBold().run()}
               className={cn("flex items-center gap-2", editor.isActive("bold") && "bg-[#DEEBFF] dark:bg-blue-900/20")}
@@ -483,7 +483,7 @@ export default function Toolbar({ editor }: ToolbarProps) {
               <ChevronDown className="h-3 w-3" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-56">
+          <DropdownMenuContent onCloseAutoFocus={(e) => e.preventDefault()} align="start" className="w-56">
             <DropdownMenuItem
               onClick={() => editor.chain().focus().toggleBulletList().run()}
               className={cn("flex items-center gap-2", editor.isActive("bulletList") && "bg-[#DEEBFF] dark:bg-blue-900/20")}
@@ -534,7 +534,7 @@ export default function Toolbar({ editor }: ToolbarProps) {
               <ChevronDown className="h-3 w-3" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-44">
+          <DropdownMenuContent onCloseAutoFocus={(e) => e.preventDefault()} align="start" className="w-44">
             <DropdownMenuItem
               onClick={() => editor.chain().focus().setTextAlign("left").run()}
               className={cn("flex items-center gap-2", editor.isActive({ textAlign: "left" }) && "bg-[#DEEBFF] dark:bg-blue-900/20")}
@@ -589,7 +589,7 @@ export default function Toolbar({ editor }: ToolbarProps) {
               <ChevronDown className="h-3 w-3" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="p-0">
+          <DropdownMenuContent onCloseAutoFocus={(e) => e.preventDefault()} align="start" className="p-0">
             <TableGridPicker
               onPick={(rows, cols) =>
                 editor.chain().focus().insertTable({ rows, cols, withHeaderRow: true }).run()
@@ -605,7 +605,7 @@ export default function Toolbar({ editor }: ToolbarProps) {
               <Plus className="h-3.5 w-3.5" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-52">
+          <DropdownMenuContent onCloseAutoFocus={(e) => e.preventDefault()} align="start" className="w-52">
             <DropdownMenuItem onClick={() => editor.chain().focus().toggleCodeBlock().run()} className="flex items-center gap-2">
               <FileCode className="h-4 w-4" /> Code snippet
             </DropdownMenuItem>
