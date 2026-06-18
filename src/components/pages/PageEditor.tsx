@@ -91,29 +91,6 @@ function QuickInsertBar({
           All templates <ChevronRight className="h-3 w-3" />
         </Link>
       </div>
-      <div className="flex items-center flex-wrap gap-0.5 px-2 py-1.5">
-        {[
-          { label: "Table", icon: <Table2 className="h-3.5 w-3.5" />, action: "table", key: "Table" },
-          { label: "Info panel", icon: <Info className="h-3.5 w-3.5" />, action: "info", key: "Info panel" },
-          { label: "Table of contents", icon: <List className="h-3.5 w-3.5" />, action: "toc", key: "Table of contents" },
-        ].map((item) => (
-          <button
-            key={item.label}
-            onMouseEnter={() => onHover(TEMPLATE_PREVIEWS[item.key] || "")}
-            onMouseDown={(e) => { e.preventDefault(); onInsert(item.action); }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-[#42526E] dark:text-slate-300 hover:bg-[#F4F5F7] dark:hover:bg-slate-700 transition-colors"
-          >
-            <span className="text-[#6B778C]">{item.icon}</span>
-            {item.label}
-          </button>
-        ))}
-        <button
-          onMouseDown={(e) => { e.preventDefault(); onInsert("more"); }}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-md text-sm text-[#42526E] dark:text-slate-300 hover:bg-[#F4F5F7] dark:hover:bg-slate-700 transition-colors ml-auto"
-        >
-          More elements <ChevronRight className="h-3 w-3" />
-        </button>
-      </div>
     </div>
   );
 }
@@ -124,7 +101,6 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
   const [content, setContent] = useState(page.content || "");
   const [pageLabels, setPageLabels] = useState<string[]>(page.labels || []);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
-  const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [editor, setEditor] = useState<EditorType | null>(null);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showPublishModal, setShowPublishModal] = useState(false);
@@ -201,6 +177,7 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
   }
 
   async function handleDelete() {
+    if (!confirm("Delete this page? This cannot be undone.")) return;
     const resp = await fetch(`/api/pages/${page.id}`, { method: "DELETE" });
     if (resp.ok) {
       toast.success("Page deleted");
@@ -447,15 +424,9 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
                   <Move className="h-4 w-4" /> Move
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                {!deleteConfirm ? (
-                  <DropdownMenuItem onClick={() => setDeleteConfirm(true)} className="flex items-center gap-2 cursor-pointer text-red-600 focus:text-red-600">
-                    <Trash2 className="h-4 w-4" /> Delete
-                  </DropdownMenuItem>
-                ) : (
-                  <DropdownMenuItem onClick={handleDelete} className="flex items-center gap-2 cursor-pointer text-red-600 font-semibold focus:text-red-600">
-                    <Trash2 className="h-4 w-4" /> Confirm delete
-                  </DropdownMenuItem>
-                )}
+                <DropdownMenuItem onClick={handleDelete} className="flex items-center gap-2 cursor-pointer text-red-600 focus:text-red-600">
+                  <Trash2 className="h-4 w-4" /> Delete
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
