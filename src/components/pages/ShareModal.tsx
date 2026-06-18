@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { X, Link2, Lock, Users, Trash2, ChevronDown, MoreHorizontal, Info, Mail } from "lucide-react";
+import { X, Lock, Users, Trash2, ChevronDown, Info, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { getInitials } from "@/lib/utils";
 
@@ -194,20 +194,15 @@ export default function ShareModal({ pageId, spaceId, pageTitle, onClose }: Shar
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-20" onClick={onClose}>
       <div
-        className="bg-white dark:bg-[#1e2636] rounded-xl shadow-2xl w-full max-w-[560px] mx-4 overflow-hidden border border-[#DFE1E6] dark:border-[#30363d]"
+        className="bg-white dark:bg-[#1e2636] rounded-xl shadow-2xl w-full max-w-[560px] mx-4 overflow-visible border border-[#DFE1E6] dark:border-[#30363d]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4">
           <h2 className="text-base font-semibold text-[#172B4D] dark:text-white">Share</h2>
-          <div className="flex items-center gap-1">
-            <button className="h-8 w-8 flex items-center justify-center rounded hover:bg-[#F4F5F7] dark:hover:bg-[#21262d] text-[#6B778C] transition-colors">
-              <MoreHorizontal className="h-4 w-4" />
-            </button>
-            <button onClick={onClose} className="h-8 w-8 flex items-center justify-center rounded hover:bg-[#F4F5F7] dark:hover:bg-[#21262d] text-[#6B778C] transition-colors">
-              <X className="h-4 w-4" />
-            </button>
-          </div>
+          <button onClick={onClose} className="h-8 w-8 flex items-center justify-center rounded hover:bg-[#F4F5F7] dark:hover:bg-[#21262d] text-[#6B778C] transition-colors">
+            <X className="h-4 w-4" />
+          </button>
         </div>
 
         {/* Search input */}
@@ -399,15 +394,8 @@ export default function ShareModal({ pageId, spaceId, pageTitle, onClose }: Shar
           </div>
         </div>
 
-        {/* Divider + Copy link */}
-        <div className="border-t border-[#F4F5F7] dark:border-[#30363d]" />
-        <button
-          onClick={copyLink}
-          className="flex items-center gap-2.5 w-full px-5 py-3.5 text-sm text-[#172B4D] dark:text-slate-200 hover:bg-[#F4F5F7] dark:hover:bg-[#21262d] transition-colors"
-        >
-          <Link2 className="h-4 w-4 text-[#42526E] dark:text-slate-400" />
-          Copy link
-        </button>
+        {/* Bottom padding */}
+        <div className="pb-2" />
       </div>
     </div>
   );
