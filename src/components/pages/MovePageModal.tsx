@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { X, ChevronDown, Search, GripVertical } from "lucide-react";
+import { X, ChevronDown, ChevronRight, Search, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
@@ -16,6 +16,7 @@ interface Page {
   title: string;
   emoji: string;
   space_id: string;
+  parent_id: string | null;
 }
 
 interface MovePageModalProps {
@@ -26,17 +27,93 @@ interface MovePageModalProps {
 
 type TabType = "browse" | "search";
 
+interface TreeNode extends Page {
+  children: TreeNode[];
+}
+
+function buildTree(pages: Page[], parentId: string | null): TreeNode[] {
+  return pages
+    .filter((p) => p.parent_id === parentId)
+    .map((p) => ({ ...p, children: buildTree(pages, p.id) }));
+}
+
+function PageTreeNode({
+  node,
+  depth,
+  pageId,
+  selectedParentId,
+  onSelect,
+}: {
+  node: TreeNode;
+  depth: number;
+  pageId: string;
+  selectedParentId: string | null;
+  onSelect: (id: string | null) => void;
+}) {
+  const [expanded, setExpanded] = useState(true);
+  const isCurrent = node.id === pageId;
+  const isSelected = selectedParentId === node.id;
+  const hasChildren = node.children.length > 0;
+
+  return (
+    <>
+      <button
+        disabled={isCurrent}
+        onClick={() => !isCurrent && onSelect(isSelected ? null : node.id)}
+        className={`w-full text-left flex items-center gap-1 py-1.5 pr-3 text-sm transition-colors rounded ${
+          isCurrent
+            ? "text-[#0052CC] bg-[#DEEBFF] cursor-default"
+            : isSelected
+            ? "bg-[#DEEBFF] text-[#0052CC]"
+            : "text-[#42526E] hover:bg-[#F4F5F7]"
+        }`}
+        style={{ paddingLeft: `${depth * 16 + 8}px` }}
+      >
+        <span
+          className="shrink-0 w-4 h-4 flex items-center justify-center"
+          onClick={(e) => {
+            if (!hasChildren) return;
+            e.stopPropagation();
+            setExpanded((v) => !v);
+          }}
+        >
+          {hasChildren ? (
+            expanded ? (
+              <ChevronDown className="h-3.5 w-3.5 text-[#6B778C]" />
+            ) : (
+              <ChevronRight className="h-3.5 w-3.5 text-[#6B778C]" />
+            )
+          ) : null}
+        </span>
+        <span className="shrink-0 text-sm">{node.emoji || "📄"}</span>
+        <span className="truncate">{node.title || "Untitled"}</span>
+      </button>
+      {expanded &&
+        hasChildren &&
+        node.children.map((child) => (
+          <PageTreeNode
+            key={child.id}
+            node={child}
+            depth={depth + 1}
+            pageId={pageId}
+            selectedParentId={selectedParentId}
+            onSelect={onSelect}
+          />
+        ))}
+    </>
+  );
+}
+
 export default function MovePageModal({ pageId, currentSpaceId, onClose }: MovePageModalProps) {
   const router = useRouter();
   const [spaces, setSpaces] = useState<Space[]>([]);
   const [pages, setPages] = useState<Page[]>([]);
   const [selectedSpaceId, setSelectedSpaceId] = useState(currentSpaceId);
-  const [selectedParentId, setSelectedParentId] = useState<string | null>(null);
+  const [selectedParentId, setSelectedParentId] = useState<string | null | "ROOT">(null);
   const [activeTab, setActiveTab] = useState<TabType>("browse");
   const [search, setSearch] = useState("");
   const [spaceDropdownOpen, setSpaceDropdownOpen] = useState(false);
   const [moving, setMoving] = useState(false);
-  const [hoveredPageId, setHoveredPageId] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -64,19 +141,21 @@ export default function MovePageModal({ pageId, currentSpaceId, onClose }: MoveP
   }, []);
 
   const selectedSpace = spaces.find((s) => s.id === selectedSpaceId);
+  const tree = buildTree(pages.filter((p) => p.id !== pageId), null);
 
-  const isLocationChanged =
-    selectedSpaceId !== currentSpaceId || selectedParentId !== null;
+  // "ROOT" means move to root of space (no parent), null means nothing selected yet
+  const isLocationChanged = selectedSpaceId !== currentSpaceId || selectedParentId !== null;
 
   async function handleContinue() {
     setMoving(true);
+    const body: { space_id: string; parent_id: string | null } = {
+      space_id: selectedSpaceId,
+      parent_id: selectedParentId === "ROOT" ? null : (selectedParentId as string | null),
+    };
     const resp = await fetch(`/api/pages/${pageId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        space_id: selectedSpaceId,
-        parent_id: selectedParentId,
-      }),
+      body: JSON.stringify(body),
     });
     if (resp.ok) {
       const page = await resp.json() as Page;
@@ -89,15 +168,13 @@ export default function MovePageModal({ pageId, currentSpaceId, onClose }: MoveP
     setMoving(false);
   }
 
-  const filteredPages =
-    activeTab === "search"
-      ? pages.filter(
-          (p) =>
-            p.id !== pageId &&
-            search &&
-            (p.title || "Untitled").toLowerCase().includes(search.toLowerCase())
-        )
-      : pages.filter((p) => p.id !== pageId);
+  const searchResults = search
+    ? pages.filter(
+        (p) =>
+          p.id !== pageId &&
+          (p.title || "Untitled").toLowerCase().includes(search.toLowerCase())
+      )
+    : [];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
@@ -116,34 +193,25 @@ export default function MovePageModal({ pageId, currentSpaceId, onClose }: MoveP
           </button>
         </div>
 
-        {/* Description */}
         <p className="px-5 pt-4 pb-2 text-sm text-[#6B778C]">
-          Select or search a destination space, then drag and drop this content and any
-          nested items into a new location.
+          Select a destination space and location, then click Continue.
         </p>
 
         {/* Tabs */}
         <div className="flex border-b border-[#DFE1E6] px-5">
-          <button
-            onClick={() => setActiveTab("browse")}
-            className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
-              activeTab === "browse"
-                ? "border-[#0052CC] text-[#0052CC]"
-                : "border-transparent text-[#6B778C] hover:text-[#172B4D]"
-            }`}
-          >
-            Browse
-          </button>
-          <button
-            onClick={() => setActiveTab("search")}
-            className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
-              activeTab === "search"
-                ? "border-[#0052CC] text-[#0052CC]"
-                : "border-transparent text-[#6B778C] hover:text-[#172B4D]"
-            }`}
-          >
-            Search
-          </button>
+          {(["browse", "search"] as TabType[]).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px capitalize ${
+                activeTab === tab
+                  ? "border-[#0052CC] text-[#0052CC]"
+                  : "border-transparent text-[#6B778C] hover:text-[#172B4D]"
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
         </div>
 
         <div className="p-5 space-y-4">
@@ -158,9 +226,7 @@ export default function MovePageModal({ pageId, currentSpaceId, onClose }: MoveP
                   <button
                     onClick={() => setSpaceDropdownOpen((v) => !v)}
                     className={`w-full border rounded-lg px-3 py-2.5 flex items-center gap-2 text-sm text-[#172B4D] transition-colors ${
-                      spaceDropdownOpen
-                        ? "border-[#0052CC]"
-                        : "border-[#DFE1E6] hover:border-[#0052CC]"
+                      spaceDropdownOpen ? "border-[#0052CC]" : "border-[#DFE1E6] hover:border-[#0052CC]"
                     }`}
                   >
                     <span className="flex items-center gap-2 flex-1 min-w-0">
@@ -171,7 +237,7 @@ export default function MovePageModal({ pageId, currentSpaceId, onClose }: MoveP
                   </button>
 
                   {spaceDropdownOpen && (
-                    <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-[#DFE1E6] rounded-lg shadow-lg z-10 max-h-64 overflow-y-auto">
+                    <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-[#DFE1E6] rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
                       <p className="px-3 py-2 text-xs font-semibold text-[#6B778C] uppercase tracking-wide">
                         Recent spaces
                       </p>
@@ -184,9 +250,7 @@ export default function MovePageModal({ pageId, currentSpaceId, onClose }: MoveP
                             setSpaceDropdownOpen(false);
                           }}
                           className={`w-full text-left flex items-center gap-2 px-3 py-2.5 text-sm transition-colors hover:bg-[#F4F5F7] ${
-                            s.id === selectedSpaceId
-                              ? "bg-[#DEEBFF] text-[#0052CC]"
-                              : "text-[#172B4D]"
+                            s.id === selectedSpaceId ? "bg-[#DEEBFF] text-[#0052CC]" : "text-[#172B4D]"
                           }`}
                         >
                           <span>{s.emoji}</span>
@@ -198,45 +262,39 @@ export default function MovePageModal({ pageId, currentSpaceId, onClose }: MoveP
                 </div>
               </div>
 
-              {/* Content (pages list) */}
+              {/* Page tree */}
               <div>
                 <label className="block text-xs font-semibold text-[#6B778C] mb-1.5">
-                  Content
+                  Location
                 </label>
-                <div className="border border-[#DFE1E6] rounded-lg max-h-56 overflow-y-auto">
-                  {filteredPages.length === 0 ? (
-                    <p className="px-3 py-4 text-sm text-[#97A0AF] text-center">
-                      No pages in this space
-                    </p>
+                <div className="border border-[#DFE1E6] rounded-lg max-h-56 overflow-y-auto py-1">
+                  {/* Space root option */}
+                  <button
+                    onClick={() => setSelectedParentId(selectedParentId === "ROOT" ? null : "ROOT")}
+                    className={`w-full text-left flex items-center gap-2 px-3 py-1.5 text-sm transition-colors rounded ${
+                      selectedParentId === "ROOT"
+                        ? "bg-[#DEEBFF] text-[#0052CC]"
+                        : "text-[#172B4D] hover:bg-[#F4F5F7]"
+                    }`}
+                  >
+                    <span className="w-4" />
+                    <span className="shrink-0">{selectedSpace?.emoji ?? "🌐"}</span>
+                    <span className="font-medium truncate">{selectedSpace?.name ?? "Space root"}</span>
+                  </button>
+
+                  {tree.length === 0 ? (
+                    <p className="px-8 py-3 text-sm text-[#97A0AF]">No other pages in this space</p>
                   ) : (
-                    filteredPages.map((p) => {
-                      const isCurrent = p.id === pageId;
-                      const isSelected = selectedParentId === p.id;
-                      return (
-                        <button
-                          key={p.id}
-                          disabled={isCurrent}
-                          onClick={() => !isCurrent && setSelectedParentId(isSelected ? null : p.id)}
-                          onMouseEnter={() => setHoveredPageId(p.id)}
-                          onMouseLeave={() => setHoveredPageId(null)}
-                          className={`w-full text-left flex items-center gap-2 px-3 py-2 text-sm transition-colors ${
-                            isCurrent
-                              ? "bg-[#DEEBFF] border-l-2 border-[#0052CC] text-[#0052CC] cursor-default"
-                              : isSelected
-                              ? "bg-[#DEEBFF] text-[#0052CC]"
-                              : "text-[#42526E] hover:bg-[#F4F5F7]"
-                          }`}
-                        >
-                          <GripVertical
-                            className={`h-3.5 w-3.5 shrink-0 transition-opacity ${
-                              hoveredPageId === p.id && !isCurrent ? "opacity-100" : "opacity-0"
-                            } text-[#97A0AF]`}
-                          />
-                          <span className="shrink-0">{p.emoji || "📄"}</span>
-                          <span className="truncate">{p.title || "Untitled"}</span>
-                        </button>
-                      );
-                    })
+                    tree.map((node) => (
+                      <PageTreeNode
+                        key={node.id}
+                        node={node}
+                        depth={1}
+                        pageId={pageId}
+                        selectedParentId={typeof selectedParentId === "string" && selectedParentId !== "ROOT" ? selectedParentId : null}
+                        onSelect={(id) => setSelectedParentId(id)}
+                      />
+                    ))
                   )}
                 </div>
               </div>
@@ -256,12 +314,10 @@ export default function MovePageModal({ pageId, currentSpaceId, onClose }: MoveP
               </div>
               {search && (
                 <div className="mt-2 border border-[#DFE1E6] rounded-lg max-h-56 overflow-y-auto">
-                  {filteredPages.length === 0 ? (
-                    <p className="px-3 py-4 text-sm text-[#97A0AF] text-center">
-                      No pages found
-                    </p>
+                  {searchResults.length === 0 ? (
+                    <p className="px-3 py-4 text-sm text-[#97A0AF] text-center">No pages found</p>
                   ) : (
-                    filteredPages.map((p) => (
+                    searchResults.map((p) => (
                       <button
                         key={p.id}
                         onClick={() =>
@@ -273,7 +329,7 @@ export default function MovePageModal({ pageId, currentSpaceId, onClose }: MoveP
                             : "text-[#42526E] hover:bg-[#F4F5F7]"
                         }`}
                       >
-                        <span>{p.emoji || "📄"}</span>
+                        <FileText className="h-3.5 w-3.5 shrink-0 text-[#6B778C]" />
                         <span className="truncate">{p.title || "Untitled"}</span>
                       </button>
                     ))
