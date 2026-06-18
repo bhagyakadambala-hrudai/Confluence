@@ -44,7 +44,7 @@ type TeamRow = { id: string; name: string; member_count?: number };
 type SearchResult = { type: "team" | "invite"; id: string; label: string; sublabel: string };
 
 /* ── Space Share Modal ── */
-function SpaceShareModal({ space, onClose }: { space: Space; onClose: () => void }) {
+function SpaceShareModal({ space, onClose }: { space: Space & { visibility?: string }; onClose: () => void }) {
   const [members, setMembers] = useState<SpaceMemberRow[]>([]);
   const [teams, setTeams] = useState<TeamRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,8 +55,13 @@ function SpaceShareModal({ space, onClose }: { space: Space; onClose: () => void
   const [selectedRole, setSelectedRole] = useState<"editor" | "viewer">("editor");
   const [showAccessMenu, setShowAccessMenu] = useState(false);
   const [showRoleMenu, setShowRoleMenu] = useState(false);
+  const [visibility, setVisibility] = useState<"public" | "private">(
+    (space.visibility as "public" | "private") || "private"
+  );
+  const [showVisibilityMenu, setShowVisibilityMenu] = useState(false);
 
   const accessMenuRef = useRef<HTMLDivElement>(null);
+  const visibilityMenuRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -66,6 +71,7 @@ function SpaceShareModal({ space, onClose }: { space: Space; onClose: () => void
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (accessMenuRef.current && !accessMenuRef.current.contains(e.target as Node)) setShowAccessMenu(false);
+      if (visibilityMenuRef.current && !visibilityMenuRef.current.contains(e.target as Node)) setShowVisibilityMenu(false);
       if (searchRef.current && !searchRef.current.contains(e.target as Node)) setShowDropdown(false);
     }
     document.addEventListener("mousedown", handleClick);
@@ -169,6 +175,17 @@ function SpaceShareModal({ space, onClose }: { space: Space; onClose: () => void
     } catch { toast.error("Could not copy link"); }
   }
 
+  async function handleUpdateVisibility(v: "public" | "private") {
+    setVisibility(v);
+    setShowVisibilityMenu(false);
+    const resp = await fetch(`/api/spaces/${space.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ visibility: v }),
+    });
+    if (!resp.ok) toast.error("Failed to update visibility");
+  }
+
   const editableMembers = members.filter(m => m.profiles && m.role !== "owner");
   const ownerRow = members.find(m => m.role === "owner");
 
@@ -232,7 +249,7 @@ function SpaceShareModal({ space, onClose }: { space: Space; onClose: () => void
               )}
             </div>
             {/* Role selector for new members */}
-            <div className="relative shrink-0" ref={accessMenuRef}>
+            <div className="relative shrink-0">
               <button
                 onClick={() => setShowRoleMenu(v => !v)}
                 className="flex items-center gap-1 px-3 h-10 text-sm text-[#172B4D] dark:text-slate-200 border border-[#DFE1E6] dark:border-[#30363d] rounded-lg hover:bg-[#F4F5F7] dark:hover:bg-[#21262d] transition-colors whitespace-nowrap"
@@ -313,6 +330,80 @@ function SpaceShareModal({ space, onClose }: { space: Space; onClose: () => void
         {loading && (
           <div className="px-5 pb-3 text-xs text-[#6B778C] dark:text-slate-400">Loading members…</div>
         )}
+
+        {/* General access */}
+        <div className="px-5 pb-3">
+          <p className="text-xs font-semibold text-[#172B4D] dark:text-slate-300 mb-2">General access</p>
+          <div className="flex items-center gap-3">
+            <div className={`h-9 w-9 rounded-full flex items-center justify-center shrink-0 ${
+              visibility === "public" ? "bg-[#DEEBFF] dark:bg-blue-900/30" : "bg-[#F4F5F7] dark:bg-[#21262d]"
+            }`}>
+              <Lock className={`h-4 w-4 ${visibility === "public" ? "text-[#0052CC]" : "text-[#42526E] dark:text-slate-400"}`} />
+            </div>
+            <div className="flex-1 min-w-0" ref={visibilityMenuRef}>
+              <div className="relative">
+                <button
+                  onClick={() => setShowVisibilityMenu((v) => !v)}
+                  className="flex items-center gap-1 text-sm font-medium text-[#172B4D] dark:text-white hover:underline"
+                >
+                  {visibility === "public" ? "Open" : "Restricted"}
+                  <ChevronDown className="h-3.5 w-3.5 text-[#6B778C]" />
+                </button>
+                <p className="text-xs text-[#6B778C] dark:text-slate-400 mt-0.5">
+                  {visibility === "public"
+                    ? "Anyone in this space"
+                    : "Only specific people"}
+                </p>
+                {showVisibilityMenu && (
+                  <div className="absolute left-0 top-full mt-1 w-72 bg-white dark:bg-[#1e2636] border border-[#DFE1E6] dark:border-[#30363d] rounded-lg shadow-xl z-20 overflow-hidden">
+                    <button
+                      onClick={() => handleUpdateVisibility("public")}
+                      className={`w-full text-left px-4 py-3 hover:bg-[#F4F5F7] dark:hover:bg-[#21262d] transition-colors flex items-start gap-3 ${visibility === "public" ? "bg-[#F4F5F7] dark:bg-[#21262d]" : ""}`}
+                    >
+                      <Lock className="h-4 w-4 text-[#42526E] dark:text-slate-400 mt-0.5 shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-[#172B4D] dark:text-white">Open</p>
+                        <p className="text-xs text-[#6B778C] dark:text-slate-400 mt-0.5">Anyone in this space</p>
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => handleUpdateVisibility("private")}
+                      className={`w-full text-left px-4 py-3 hover:bg-[#F4F5F7] dark:hover:bg-[#21262d] transition-colors flex items-start gap-3 ${visibility === "private" ? "bg-[#F4F5F7] dark:bg-[#21262d]" : ""}`}
+                    >
+                      <Lock className="h-4 w-4 text-red-400 mt-0.5 shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-[#172B4D] dark:text-white">Restricted</p>
+                        <p className="text-xs text-[#6B778C] dark:text-slate-400 mt-0.5">Only specific people can view or edit</p>
+                      </div>
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+            {/* Role for general access — matches selectedRole for new members */}
+            <div className="relative shrink-0" ref={accessMenuRef}>
+              <button
+                onClick={() => setShowAccessMenu((v) => !v)}
+                className="flex items-center gap-1 px-3 h-8 text-sm text-[#172B4D] dark:text-slate-200 border border-[#DFE1E6] dark:border-[#30363d] rounded hover:bg-[#F4F5F7] dark:hover:bg-[#21262d] transition-colors"
+              >
+                {selectedRole === "editor" ? "Can edit" : "Can view"}
+                <ChevronDown className="h-3.5 w-3.5 text-[#6B778C]" />
+              </button>
+              {showAccessMenu && (
+                <div className="absolute right-0 top-full mt-1 w-40 bg-white dark:bg-[#1e2636] border border-[#DFE1E6] dark:border-[#30363d] rounded-lg shadow-xl z-20 overflow-hidden">
+                  <button
+                    onClick={() => { setSelectedRole("editor"); setShowAccessMenu(false); }}
+                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-[#F4F5F7] dark:hover:bg-[#21262d] transition-colors ${selectedRole === "editor" ? "bg-[#F4F5F7] dark:bg-[#21262d] font-medium" : ""}`}
+                  >Can edit</button>
+                  <button
+                    onClick={() => { setSelectedRole("viewer"); setShowAccessMenu(false); }}
+                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-[#F4F5F7] dark:hover:bg-[#21262d] transition-colors ${selectedRole === "viewer" ? "bg-[#F4F5F7] dark:bg-[#21262d] font-medium" : ""}`}
+                  >Can view</button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
 
         {/* Member count summary */}
         {!loading && members.length > 0 && (

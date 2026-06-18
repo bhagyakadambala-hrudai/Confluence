@@ -97,3 +97,9 @@ CREATE POLICY "Space admin manages page permissions" ON public.page_permissions 
 ALTER TABLE public.pages
   ADD COLUMN IF NOT EXISTS inherit_permission text DEFAULT 'edit'
   CHECK (inherit_permission IN ('view', 'edit'));
+
+-- 7. Space visibility: 'public' = anyone in the org can discover/join the space,
+--    'private' = invite-only (default)
+ALTER TABLE public.spaces
+  ADD COLUMN IF NOT EXISTS visibility text DEFAULT 'private'
+  CHECK (visibility IN ('public', 'private'));

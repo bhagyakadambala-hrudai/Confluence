@@ -46,6 +46,7 @@ export async function PATCH(
   if (body.emoji !== undefined) updateData.emoji = body.emoji;
   if (body.overview_content !== undefined) updateData.overview_content = body.overview_content;
   if (body.status !== undefined) updateData.status = body.status;
+  if (body.visibility !== undefined) updateData.visibility = body.visibility;
   const { data, error } = await admin
     .from("spaces")
     .update(updateData)
