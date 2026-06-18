@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { X, Link2, Lock, Users, Trash2, ChevronDown, MoreHorizontal, Info, FileEdit, Mail } from "lucide-react";
+import { X, Link2, Lock, Users, Trash2, ChevronDown, MoreHorizontal, Info, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { getInitials } from "@/lib/utils";
 
@@ -25,6 +25,8 @@ interface ShareModalProps {
 
 export default function ShareModal({ pageId, spaceId, pageTitle, onClose }: ShareModalProps) {
   const [accessMode, setAccessMode] = useState<"inherit" | "restricted">("inherit");
+  const [inheritPermission, setInheritPermission] = useState<"view" | "edit">("edit");
+  const [showInheritMenu, setShowInheritMenu] = useState(false);
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [spaceMemberCount, setSpaceMemberCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -37,6 +39,7 @@ export default function ShareModal({ pageId, spaceId, pageTitle, onClose }: Shar
   const [teams, setTeams] = useState<{ id: string; name: string; member_count: number }[]>([]);
 
   const accessMenuRef = useRef<HTMLDivElement>(null);
+  const inheritMenuRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -47,6 +50,7 @@ export default function ShareModal({ pageId, spaceId, pageTitle, onClose }: Shar
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (accessMenuRef.current && !accessMenuRef.current.contains(e.target as Node)) setShowAccessMenu(false);
+      if (inheritMenuRef.current && !inheritMenuRef.current.contains(e.target as Node)) setShowInheritMenu(false);
       if (searchRef.current && !searchRef.current.contains(e.target as Node)) setShowDropdown(false);
     }
     document.addEventListener("mousedown", handleClick);
@@ -59,6 +63,7 @@ export default function ShareModal({ pageId, spaceId, pageTitle, onClose }: Shar
     if (resp.ok) {
       const data = await resp.json();
       setAccessMode(data.access_mode);
+      setInheritPermission(data.inherit_permission || "edit");
       setPermissions(data.permissions);
       setSpaceMemberCount(data.space_member_count);
     }
@@ -86,6 +91,17 @@ export default function ShareModal({ pageId, spaceId, pageTitle, onClose }: Shar
       body: JSON.stringify({ access_mode: mode }),
     });
     if (!resp.ok) toast.error("Failed to update access");
+  }
+
+  async function handleUpdateInheritPermission(perm: "view" | "edit") {
+    setInheritPermission(perm);
+    setShowInheritMenu(false);
+    const resp = await fetch(`/api/pages/${pageId}/permissions`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ inherit_permission: perm }),
+    });
+    if (!resp.ok) toast.error("Failed to update permission");
   }
 
   function handleSearch(q: string) {
@@ -259,13 +275,12 @@ export default function ShareModal({ pageId, spaceId, pageTitle, onClose }: Shar
 
         {/* Info row */}
         <div className="mx-5 mb-3 px-3 py-2.5 bg-[#F8F9FA] dark:bg-[#21262d] rounded-lg flex items-start gap-2">
-          <FileEdit className="h-4 w-4 text-[#42526E] dark:text-slate-400 shrink-0 mt-0.5" />
+          <Info className="h-4 w-4 text-[#42526E] dark:text-slate-400 shrink-0 mt-0.5" />
           <span className="text-xs text-[#42526E] dark:text-slate-400 leading-relaxed">
-            Only people with the link can view and edit drafts.
+            {accessMode === "restricted"
+              ? "Only people explicitly added above can view or edit this page."
+              : "Choose the access settings to apply when publishing this page."}
           </span>
-          <button className="shrink-0 ml-auto text-[#42526E] dark:text-slate-400 hover:text-[#172B4D]">
-            <Info className="h-3.5 w-3.5" />
-          </button>
         </div>
 
         {/* Current permissions (if any) */}
@@ -354,9 +369,33 @@ export default function ShareModal({ pageId, spaceId, pageTitle, onClose }: Shar
                 )}
               </div>
             </div>
-            <button className="shrink-0 px-3 h-8 text-sm text-[#172B4D] dark:text-slate-200 border border-[#DFE1E6] dark:border-[#30363d] rounded hover:bg-[#F4F5F7] dark:hover:bg-[#21262d] transition-colors">
-              Can edit
-            </button>
+            {accessMode === "inherit" && (
+              <div className="relative shrink-0" ref={inheritMenuRef}>
+                <button
+                  onClick={() => setShowInheritMenu((v) => !v)}
+                  className="flex items-center gap-1 px-3 h-8 text-sm text-[#172B4D] dark:text-slate-200 border border-[#DFE1E6] dark:border-[#30363d] rounded hover:bg-[#F4F5F7] dark:hover:bg-[#21262d] transition-colors"
+                >
+                  {inheritPermission === "edit" ? "Can edit" : "Can view"}
+                  <ChevronDown className="h-3.5 w-3.5 text-[#6B778C]" />
+                </button>
+                {showInheritMenu && (
+                  <div className="absolute right-0 top-full mt-1 w-40 bg-white dark:bg-[#1e2636] border border-[#DFE1E6] dark:border-[#30363d] rounded-lg shadow-xl z-20 overflow-hidden">
+                    <button
+                      onClick={() => handleUpdateInheritPermission("view")}
+                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-[#F4F5F7] dark:hover:bg-[#21262d] transition-colors ${inheritPermission === "view" ? "bg-[#F4F5F7] dark:bg-[#21262d] font-medium" : ""}`}
+                    >
+                      Can view
+                    </button>
+                    <button
+                      onClick={() => handleUpdateInheritPermission("edit")}
+                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-[#F4F5F7] dark:hover:bg-[#21262d] transition-colors ${inheritPermission === "edit" ? "bg-[#F4F5F7] dark:bg-[#21262d] font-medium" : ""}`}
+                    >
+                      Can edit
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

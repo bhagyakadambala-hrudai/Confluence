@@ -25,6 +25,7 @@ interface PublishModalProps {
   parentPage: { id: string; title: string; emoji: string } | null;
   onPublish: () => Promise<void>;
   onClose: () => void;
+  onOpenShare?: () => void;
 }
 
 /* ── Inline calendar picker ── */
@@ -134,7 +135,7 @@ function CalendarPicker({
 }
 
 /* ── Main modal ── */
-export default function PublishModal({ page, space, parentPage, onPublish, onClose }: PublishModalProps) {
+export default function PublishModal({ page, space, parentPage, onPublish, onClose, onOpenShare }: PublishModalProps) {
   const [publishing, setPublishing]         = useState(false);
   const [showMoveModal, setShowMoveModal]   = useState(false);
   const [showMoreOptions, setShowMoreOptions] = useState(false);
@@ -282,7 +283,15 @@ export default function PublishModal({ page, space, parentPage, onPublish, onClo
                 <p className="text-sm font-semibold text-[#172B4D]">Open</p>
                 <p className="text-xs text-[#6B778C]">Anyone in this space can view and edit</p>
               </div>
-              <Pencil className="h-3.5 w-3.5 text-[#6B778C] shrink-0" />
+              {onOpenShare && (
+                <button
+                  onClick={() => { onClose(); onOpenShare(); }}
+                  className="h-7 w-7 flex items-center justify-center rounded hover:bg-[#F4F5F7] transition-colors shrink-0"
+                  title="Edit access settings"
+                >
+                  <Pencil className="h-3.5 w-3.5 text-[#6B778C]" />
+                </button>
+              )}
             </div>
           </div>
 

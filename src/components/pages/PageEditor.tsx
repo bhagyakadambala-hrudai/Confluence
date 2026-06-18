@@ -575,6 +575,7 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
         parentPage={parentPage}
         onPublish={handlePublish}
         onClose={() => setShowPublishModal(false)}
+        onOpenShare={() => { setShowPublishModal(false); setShowShareModal(true); }}
       />
     )}
     {showPreview && (

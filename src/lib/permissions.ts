@@ -26,17 +26,18 @@ export async function getPageAccess(
     return { canView: true, canEdit: true };
   }
 
-  // Fetch page access_mode
+  // Fetch page access_mode and inherit_permission
   const { data: page } = await admin
     .from("pages")
-    .select("access_mode")
+    .select("access_mode, inherit_permission")
     .eq("id", pageId)
     .single();
 
   const accessMode = page?.access_mode ?? "inherit";
+  const inheritPermission = page?.inherit_permission ?? "edit";
 
   if (accessMode === "inherit") {
-    if (role === "editor") return { canView: true, canEdit: true };
+    if (role === "editor") return { canView: true, canEdit: inheritPermission === "edit" };
     if (role === "viewer") return { canView: true, canEdit: false };
     return { canView: false, canEdit: false };
   }

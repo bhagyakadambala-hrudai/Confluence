@@ -91,3 +91,9 @@ CREATE POLICY "Page permissions visible to space members" ON public.page_permiss
 DROP POLICY IF EXISTS "Space admin manages page permissions" ON public.page_permissions;
 CREATE POLICY "Space admin manages page permissions" ON public.page_permissions FOR ALL
   USING (is_space_member((SELECT space_id FROM public.pages WHERE id = page_permissions.page_id)));
+
+-- 6. inherit_permission: controls whether space editors can edit (or only view) a specific page
+--    when access_mode = 'inherit'. Default 'edit' = space editors can edit.
+ALTER TABLE public.pages
+  ADD COLUMN IF NOT EXISTS inherit_permission text DEFAULT 'edit'
+  CHECK (inherit_permission IN ('view', 'edit'));

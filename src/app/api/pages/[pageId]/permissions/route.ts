@@ -14,7 +14,7 @@ export async function GET(
   const admin = createAdminClient();
   const { data: page } = await admin
     .from("pages")
-    .select("access_mode, space_id")
+    .select("access_mode, inherit_permission, space_id")
     .eq("id", pageId)
     .single();
   if (!page) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -32,6 +32,7 @@ export async function GET(
 
   return NextResponse.json({
     access_mode: page.access_mode || "inherit",
+    inherit_permission: page.inherit_permission || "edit",
     space_member_count: spaceMemberCount ?? 0,
     permissions: (perms || []).map((p: Record<string, unknown>) => ({
       id: p.id,
@@ -119,19 +120,23 @@ export async function PATCH(
 
   const body = await request.json();
 
-  // Update access_mode on the page
-  if (body.access_mode !== undefined) {
-    const admin = createAdminClient();
-    const { data, error } = await admin
-      .from("pages")
-      .update({ access_mode: body.access_mode })
-      .eq("id", pageId)
-      .select("id, access_mode")
-      .single();
+  const admin = createAdminClient();
+  const update: Record<string, unknown> = {};
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json(data);
+  if (body.access_mode !== undefined) update.access_mode = body.access_mode;
+  if (body.inherit_permission !== undefined) update.inherit_permission = body.inherit_permission;
+
+  if (Object.keys(update).length === 0) {
+    return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
   }
 
-  return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
+  const { data, error } = await admin
+    .from("pages")
+    .update(update)
+    .eq("id", pageId)
+    .select("id, access_mode, inherit_permission")
+    .single();
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json(data);
 }
