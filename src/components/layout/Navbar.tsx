@@ -18,7 +18,6 @@ import {
   Plus, FileText, Globe, PenLine,
   Link2, Users, Loader2,
 } from "lucide-react";
-import NotificationDropdown from "@/components/layout/NotificationDropdown";
 import { useTheme } from "next-themes";
 import { getInitials } from "@/lib/utils";
 import { toast } from "sonner";
@@ -358,8 +357,6 @@ export default function Navbar({ user }: NavbarProps) {
               )}
             </DropdownMenuContent>
           </DropdownMenu>
-
-          <NotificationDropdown />
 
           {mounted && (
             <button
