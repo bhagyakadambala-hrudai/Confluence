@@ -317,6 +317,38 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
     }
   }
 
+  // Preview mode — renders within the layout so the sidebar remains visible
+  if (showPreview) {
+    return (
+      <div className="flex flex-col min-h-full bg-white dark:bg-[#1B2A3B] overflow-y-auto">
+        <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-3 border-b border-[#E8EAED] dark:border-slate-700 bg-white dark:bg-[#1B2A3B]">
+          <nav className="flex items-center gap-1.5 text-sm text-[#6B778C] dark:text-slate-400">
+            {space && <span className="text-[#172B4D] dark:text-slate-200 font-medium">{space.emoji} {space.name}</span>}
+            {space && <span>/</span>}
+            {parentPage && <><span className="truncate max-w-[120px]">{parentPage.title}</span><span>/</span></>}
+            <span className="text-[#0052CC] dark:text-blue-400 font-medium truncate max-w-[200px]">{title || "Untitled"}</span>
+          </nav>
+          <button
+            onClick={() => setShowPreview(false)}
+            className="px-4 py-1.5 text-sm bg-[#0052CC] hover:bg-[#0065FF] text-white rounded font-semibold transition-colors"
+          >
+            Back
+          </button>
+        </div>
+        <div className="max-w-4xl mx-auto w-full px-8 md:px-16 py-10">
+          {content ? (
+            <div
+              className="prose prose-slate dark:prose-invert max-w-none"
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }}
+            />
+          ) : (
+            <p className="text-[#97A0AF] dark:text-slate-500 italic">No content yet.</p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
     <div className="flex flex-col min-h-full bg-white dark:bg-[#1B2A3B]">
@@ -577,34 +609,6 @@ export default function PageEditor({ page, space, parentPage, labels, currentUse
         onClose={() => setShowPublishModal(false)}
         onOpenShare={() => { setShowPublishModal(false); setShowShareModal(true); }}
       />
-    )}
-    {showPreview && (
-      <div className="fixed inset-0 z-50 bg-white dark:bg-[#1B2A3B] overflow-y-auto">
-        <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-3 border-b border-[#E8EAED] dark:border-slate-700 bg-white dark:bg-[#1B2A3B]">
-          <nav className="flex items-center gap-1.5 text-sm text-[#6B778C] dark:text-slate-400">
-            {space && <span className="text-[#172B4D] dark:text-slate-200 font-medium">{space.emoji} {space.name}</span>}
-            {space && <span>/</span>}
-            {parentPage && <><span className="truncate max-w-[120px]">{parentPage.title}</span><span>/</span></>}
-            <span className="text-[#0052CC] dark:text-blue-400 font-medium truncate max-w-[200px]">{title || "Untitled"}</span>
-          </nav>
-          <button
-            onClick={() => setShowPreview(false)}
-            className="flex items-center gap-1.5 px-4 py-1.5 text-sm bg-[#0052CC] hover:bg-[#0065FF] text-white rounded font-semibold transition-colors"
-          >
-            <X className="h-3.5 w-3.5" /> Close preview
-          </button>
-        </div>
-        <div className="max-w-4xl mx-auto px-8 md:px-16 py-10">
-          {content ? (
-            <div
-              className="prose prose-slate dark:prose-invert max-w-none"
-              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }}
-            />
-          ) : (
-            <p className="text-[#97A0AF] dark:text-slate-500 italic">No content yet.</p>
-          )}
-        </div>
-      </div>
     )}
     {showMoveModal && (
       <MovePageModal
