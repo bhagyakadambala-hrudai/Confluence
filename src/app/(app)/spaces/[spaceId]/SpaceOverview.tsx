@@ -598,49 +598,6 @@ export default function SpaceOverview({
             )}
           </section>
 
-          {/* Project Tracker */}
-          <section className="mb-8">
-            <h2 className="text-lg font-semibold text-[#172B4D] dark:text-white mb-3">Project Tracker</h2>
-            <div className="text-sm text-[#6B778C] dark:text-slate-400">
-              There are no recent updates at this time.
-            </div>
-          </section>
-
-          {/* Recently updated content */}
-          <section className="mb-8">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-lg font-semibold text-[#172B4D] dark:text-white">Recently updated content</h2>
-              <Link href={`/spaces/${space.id}`} className="text-xs text-[#0052CC] hover:underline">View all</Link>
-            </div>
-            <div className="bg-[#EAF2FF] dark:bg-blue-900/20 border border-[#DEEBFF] dark:border-blue-800/30 rounded px-4 py-3 text-sm text-[#0052CC] dark:text-blue-300 mb-3 flex items-start gap-2">
-              <span className="text-base leading-none mt-0.5">ℹ️</span>
-              <span>This list below will automatically update each time somebody in your space creates or updates content.</span>
-            </div>
-            {pages.length === 0 ? (
-              <p className="text-sm text-[#6B778C] dark:text-slate-400">There are no recent updates at this time.</p>
-            ) : (
-              <div className="space-y-1">
-                {pages.map((page) => (
-                  <Link
-                    key={page.id}
-                    href={`/spaces/${space.id}/pages/${page.id}/edit`}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded hover:bg-[#F4F5F7] dark:hover:bg-[#21262d] transition-colors group"
-                  >
-                    <FileText className="h-4 w-4 text-[#0052CC] shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <span className="text-sm font-medium text-[#0052CC] group-hover:underline truncate block">
-                        {page.title || "Untitled"}
-                      </span>
-                      <span className="text-xs text-[#6B778C] dark:text-slate-400">
-                        {formatRelativeTime(page.updated_at)}
-                        {page.profiles?.full_name && ` · contributed by ${page.profiles.full_name}`}
-                      </span>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </section>
 
         </div>
       </div>
